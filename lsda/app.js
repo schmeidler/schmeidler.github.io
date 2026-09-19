@@ -1,0 +1,316 @@
+'use strict';
+
+const $ = id => document.getElementById(id);
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isDE = document.documentElement.lang.toLowerCase().startsWith('de');
+const locale = isDE ? 'de-AT' : 'en-GB';
+const numberFormatter = new Intl.NumberFormat(locale);
+const fmt = value => numberFormatter.format(value);
+const fmt1 = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const t = isDE ? {
+  represented: 'im Modell dargestellte Erkrankungen',
+  opened: name => `${name} wurde als Zentrum des Netzwerks geöffnet.`,
+  openNode: name => `${name} als neues Zentrum öffnen`,
+  graphLabel: name => `Netzwerk von Erkrankungen, die mit ${name} verwandt sind`,
+  noneFound: 'Keine dargestellte Erkrankung gefunden. Versuche einen englischen Krankheitsnamen oder eine MONDO-ID.',
+  data: 'Daten',
+  relations: (rows, sourceDiseases, modeled) => `${rows} Beziehungen aus <b>kg.csv - PrimeKG</b>, mit ${sourceDiseases} Erkrankungen im Quellkatalog und ${modeled} Erkrankungen, die in diesem Modell dargestellt sind.`,
+  phenotype: 'Phänotyp-Merkmale',
+  gene: 'Gen-/Protein-Merkmale',
+  pathway: 'Pathway-Merkmale',
+  model: 'Modell',
+  modelText: (algorithm, hidden, epochs) => `${algorithm}, ${hidden} verborgene Einheiten und ${epochs} Epochen. Die Ähnlichkeit wird aus mittelwertzentrierten, L2-normalisierten Hidden-Logits mittels Kosinus-Ähnlichkeit berechnet.`,
+  modelCaveat: 'Verbindungen stellen Ähnlichkeit innerhalb dieses Modells dar. Sie sind keine Wahrscheinlichkeiten, Diagnosen oder Nachweise für Kausalität. Die Knotenpositionen dienen ausschließlich der Lesbarkeit des Netzwerks.',
+  diagnostic: 'Technische Diagnostik',
+  diagnosticText: (rbm, base) => `Recall@20 in der dokumentierten In-Sample-Diagnostik: RBM ${rbm} %, Prävalenz-Baseline ${base} %. 20 % der positiven Merkmale wurden nach dem Training maskiert; dies ist eine In-Sample-Diagnostik und kein unabhängiger Test.`,
+  loadError: status => `Der Datensatz konnte nicht geladen werden (${status}).`,
+  invalidData: 'Ungültiger Modelldatensatz.',
+  unavailable: 'Modell nicht verfügbar',
+  localServer: 'Bitte öffne die App über einen lokalen Webserver.'
+} : {
+  represented: 'diseases represented in the model',
+  opened: name => `${name} opened as the centre of the network.`,
+  openNode: name => `Open ${name} as the new centre`,
+  graphLabel: name => `Network of diseases related to ${name}`,
+  noneFound: 'No represented disease found. Try an English disease name or MONDO ID.',
+  data: 'Data',
+  relations: (rows, sourceDiseases, modeled) => `${rows} relationships from <b>kg.csv - PrimeKG</b>, with ${sourceDiseases} diseases in the source catalogue and ${modeled} diseases represented in this model.`,
+  phenotype: 'Phenotype features',
+  gene: 'Gene / protein features',
+  pathway: 'Pathway features',
+  model: 'Model',
+  modelText: (algorithm, hidden, epochs) => `${algorithm}, ${hidden} hidden units and ${epochs} epochs. Similarity is calculated from mean-centred, L2-normalised hidden logits using cosine similarity.`,
+  modelCaveat: 'Connections represent similarity within this model. They are not probabilities, diagnoses or evidence of causality. Node positions are used only to keep the network readable.',
+  diagnostic: 'Technical diagnostic',
+  diagnosticText: (rbm, base, description) => `Recall@20 in the documented in-sample diagnostic: RBM ${rbm}%, prevalence baseline ${base}%. ${description}`,
+  loadError: status => `The data set could not be loaded (${status}).`,
+  invalidData: 'Invalid model data set.',
+  unavailable: 'Model unavailable',
+  localServer: 'Please open the app through a local web server.'
+};
+
+let data;
+let center = -1;
+let catalogByIndex = [];
+
+function cosine(a, b){
+  let dot = 0, na = 0, nb = 0;
+  for(let i = 0; i < a.length; i++){
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return na && nb ? Math.max(-1, Math.min(1, dot / Math.sqrt(na * nb))) : 0;
+}
+
+function rank(index, count){
+  return data.embeddings
+    .map((embedding, i) => ({i, score: cosine(data.embeddings[index], embedding)}))
+    .filter(x => x.i !== index)
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .slice(0, count);
+}
+
+function wrap(text, max = 24, maxLines = 2){
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = '';
+  for(const word of words){
+    const candidate = (line + ' ' + word).trim();
+    if(candidate.length > max && line){
+      lines.push(line);
+      line = word;
+    }else{
+      line = candidate;
+    }
+  }
+  if(line) lines.push(line);
+  if(lines.length > maxLines){
+    lines.length = maxLines;
+    lines[maxLines - 1] = lines[maxLines - 1].slice(0, Math.max(1, max - 1)) + '…';
+  }
+  return lines;
+}
+
+function svgText(text, x, y, max = 24, className = 'node-label', maxLines = 2, gap = 15){
+  const lines = wrap(text, max, maxLines);
+  return `<text class="${className}" x="${x}" y="${y}" text-anchor="middle">${lines.map((line, i) => `<tspan x="${x}" dy="${i ? gap : 0}">${escapeHtml(line)}</tspan>`).join('')}</text>`;
+}
+
+function nodeLabelGroup(text, x, y, max = 24, maxLines = 2, gap = 15, mobile = false, position = 'below', clearance = 0){
+  const lines = wrap(text, max, maxLines);
+  const longest = Math.max(...lines.map(line => line.length), 1);
+  const charWidth = mobile ? 5.9 : 6.5;
+  const width = Math.max(54, Math.min(mobile ? 150 : 210, longest * charWidth + 18));
+  const height = 14 + (lines.length - 1) * gap + 12;
+  let rectY;
+  let textY;
+  if(position === 'above'){
+    const bottom = y - clearance;
+    rectY = bottom - height;
+    textY = rectY + 19;
+  }else{
+    const top = y - 14;
+    rectY = top - 5;
+    textY = y;
+  }
+  return `<g class="node-label-group" aria-hidden="true"><rect class="node-label-box" x="${(x - width / 2).toFixed(1)}" y="${rectY.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}" rx="8" ry="8"/>` +
+    `<text class="node-label" x="${x}" y="${textY.toFixed(1)}" text-anchor="middle">${lines.map((line, i) => `<tspan x="${x}" dy="${i ? gap : 0}">${escapeHtml(line)}</tspan>`).join('')}</text></g>`;
+}
+
+function selectDisease(record){
+  if(!record || record.modelIndex < 0) return;
+  center = record.modelIndex;
+  $('search').value = record.name;
+  $('searchResults').replaceChildren();
+  $('diseaseName').textContent = record.name;
+  $('diseaseMeta').textContent = `${record.source} · ${record.sourceId} · ${fmt(data.meta.modeledDiseases)} ${t.represented}`;
+  renderGraph();
+  $('status').textContent = t.opened(record.name);
+}
+
+function buildPeerEdges(points){
+  const candidates = [];
+  const seen = new Set();
+  for(const a of points){
+    const local = points
+      .filter(b => b.i !== a.i)
+      .map(b => ({b, score: cosine(data.embeddings[a.i], data.embeddings[b.i])}))
+      .sort((x, y) => y.score - x.score)
+      .slice(0, 2);
+    for(const {b, score} of local){
+      const key = a.i < b.i ? `${a.i}:${b.i}` : `${b.i}:${a.i}`;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      candidates.push({a, b, score});
+    }
+  }
+  return candidates.sort((x, y) => y.score - x.score).slice(0, Math.max(points.length + 2, 12));
+}
+
+function renderGraph(){
+  if(center < 0 || !data) return;
+  const graph = $('graph');
+  const width = Math.max(320, graph.clientWidth || 900);
+  const mobile = width < 620;
+  const count = mobile ? 8 : 12;
+  const height = mobile ? 530 : Math.min(720, Math.max(650, Math.round(width * 0.57)));
+  const cx = width / 2;
+  const cy = height / 2 - (mobile ? 8 : 0);
+  const neighbors = rank(center, count);
+  const ringX = Math.max(126, width * (mobile ? 0.34 : 0.36));
+  const ringY = Math.max(168, height * (mobile ? 0.36 : 0.35));
+  const points = neighbors.map((n, j) => {
+    const angle = -Math.PI / 2 + j * 2 * Math.PI / neighbors.length;
+    const alternating = j % 2 ? 0.92 : 1.03;
+    return {...n, x: cx + Math.cos(angle) * ringX * alternating, y: cy + Math.sin(angle) * ringY * alternating, j};
+  });
+
+  const peerEdges = buildPeerEdges(points).map(({a, b, score}) => {
+    const strokeWidth = 0.65 + Math.max(0, score) * 0.8;
+    return `<line class="peer-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke-width="${strokeWidth.toFixed(2)}"><title>${escapeHtml(catalogByIndex[a.i].name)} ↔ ${escapeHtml(catalogByIndex[b.i].name)}</title></line>`;
+  }).join('');
+
+  const centerEdges = points.map(p => {
+    const strokeWidth = 0.8 + Math.max(0, p.score) * 1.35;
+    return `<line class="center-edge" x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke-width="${strokeWidth.toFixed(2)}"><title>${escapeHtml(catalogByIndex[p.i].name)}</title></line>`;
+  }).join('');
+
+  const nodeRadius = mobile ? 18 : 21;
+  const labelGap = mobile ? 9 : 12;
+  const nodes = points.map(p => {
+    const name = catalogByIndex[p.i].name;
+    const maxChars = mobile ? 15 : Math.max(18, Math.min(28, Math.floor(width / 42)));
+    return `<g class="network-node" role="button" tabindex="0" data-index="${p.i}" aria-label="${escapeHtml(t.openNode(name))}">
+      <circle class="node-disc" cx="${p.x}" cy="${p.y}" r="${nodeRadius}"/>
+      <circle class="node-dot" cx="${p.x}" cy="${p.y}" r="${mobile ? 3.8 : 4.8}"/>
+      ${nodeLabelGroup(name, p.x, p.y, maxChars, 2, mobile ? 13 : 15, mobile, 'above', nodeRadius + labelGap)}
+      <title>${escapeHtml(name)}</title>
+    </g>`;
+  }).join('');
+
+  const centerName = catalogByIndex[center].name;
+  const centerMaxChars = mobile ? 18 : 27;
+  const centerR = mobile ? 88 : 112;
+  const centerLines = wrap(centerName, centerMaxChars, 3);
+  const centerGap = mobile ? 15 : 18;
+  const centerText = svgText(centerName, cx, cy - ((centerLines.length - 1) * centerGap) / 2 + (mobile ? 5 : 6), centerMaxChars, 'center-label', 3, centerGap);
+
+  graph.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" aria-label="${escapeHtml(t.graphLabel(centerName))}">
+    <g aria-hidden="true">${peerEdges}${centerEdges}</g>
+    <circle class="center-disc" cx="${cx}" cy="${cy}" r="${centerR}"/>
+    ${centerText}
+    ${nodes}
+  </svg>`;
+  graph.setAttribute('aria-busy', 'false');
+
+  graph.querySelectorAll('.network-node').forEach(node => {
+    const open = () => selectDisease(catalogByIndex[Number(node.dataset.index)]);
+    node.addEventListener('click', open);
+    node.addEventListener('keydown', event => {
+      if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); open(); }
+    });
+  });
+}
+
+function search(){
+  if(!data) return;
+  const q = $('search').value.trim().toLowerCase();
+  if(!q){ $('searchResults').replaceChildren(); return; }
+  const found = data.catalog
+    .filter(d => d.modelIndex >= 0 && (d.name.toLowerCase().includes(q) || d.sourceId.toLowerCase().includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 18);
+  $('searchResults').innerHTML = found.length
+    ? found.map(d => `<button type="button" data-id="${d.id}">${escapeHtml(d.name)}<small>${escapeHtml(d.source)} · ${escapeHtml(d.sourceId)}</small></button>`).join('')
+    : `<p>${t.noneFound}</p>`;
+  $('searchResults').querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => selectDisease(data.catalog.find(d => d.id === button.dataset.id)));
+  });
+}
+
+function renderMethod(){
+  const m = data.meta;
+  const rbm = fmt1.format(m.diagnostic.rbmRecall20 * 100);
+  const base = fmt1.format(m.diagnostic.prevalenceRecall20 * 100);
+  $('methodContent').innerHTML = `
+    <section class="method-section">
+      <h3>${t.data}</h3>
+      <p>${t.relations(fmt(m.sourceRows), fmt(m.sourceDiseases), fmt(m.modeledDiseases))}</p>
+      <table class="method-table"><tbody>
+        <tr><td>${t.phenotype}</td><td>${fmt(m.featureCounts.s)}</td></tr>
+        <tr><td>${t.gene}</td><td>${fmt(m.featureCounts.g)}</td></tr>
+        <tr><td>${t.pathway}</td><td>${fmt(m.featureCounts.p)}</td></tr>
+      </tbody></table>
+    </section>
+    <section class="method-section">
+      <h3>${t.model}</h3>
+      <p>${escapeHtml(t.modelText(m.algorithm, m.hiddenUnits, m.epochs))}</p>
+      <p>${t.modelCaveat}</p>
+    </section>
+    <section class="method-section">
+      <h3>${t.diagnostic}</h3>
+      <p>${escapeHtml(isDE ? t.diagnosticText(rbm, base) : t.diagnosticText(rbm, base, m.diagnostic.description))}</p>
+    </section>`;
+}
+
+function setTheme(theme){
+  const resolved = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = resolved;
+  $('themeToggle').setAttribute('aria-pressed', String(resolved === 'dark'));
+  try{ localStorage.setItem('disease-network-theme', resolved); }catch{}
+}
+
+function initTheme(){
+  setTheme(document.documentElement.dataset.theme || 'light');
+  $('themeToggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+}
+
+function initMenu(){
+  const toggle = $('menuToggle');
+  const nav = $('main-nav');
+  const close = () => { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); };
+  toggle.addEventListener('click', () => {
+    const open = !nav.classList.contains('open');
+    nav.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+  nav.querySelectorAll('a').forEach(link => link.addEventListener('click', close));
+  window.addEventListener('resize', () => { if(window.innerWidth > 950) close(); });
+  return close;
+}
+
+async function init(){
+  try{
+    const response = await fetch('data.json');
+    if(!response.ok) throw new Error(t.loadError(response.status));
+    data = await response.json();
+    if(!data.embeddings?.length || data.embeddings.length !== data.diseases.length) throw new Error(t.invalidData);
+    for(const disease of data.catalog){ if(disease.modelIndex >= 0) catalogByIndex[disease.modelIndex] = disease; }
+    renderMethod();
+    const first = data.catalog.find(d => d.modelIndex >= 0 && d.name.toLowerCase() === 'parkinson disease')
+      || data.catalog.find(d => d.modelIndex >= 0 && d.name.toLowerCase().includes('parkinson'))
+      || catalogByIndex[0];
+    selectDisease(first);
+  }catch(error){
+    $('diseaseName').textContent = t.unavailable;
+    $('diseaseMeta').textContent = '';
+    $('graph').setAttribute('aria-busy', 'false');
+    $('graph').innerHTML = `<div class="graph-empty">${escapeHtml(error.message)}<br>${t.localServer}</div>`;
+    $('status').textContent = error.message;
+  }
+}
+
+$('search').addEventListener('input', search);
+$('search').addEventListener('keydown', event => {
+  if(event.key === 'Enter') $('searchResults').querySelector('button')?.click();
+  if(event.key === 'Escape') $('searchResults').replaceChildren();
+});
+const closeMenu = initMenu();
+$('methodButton').addEventListener('click', () => { closeMenu(); $('methodDialog').showModal(); });
+$('closeDialog').addEventListener('click', () => $('methodDialog').close());
+$('methodDialog').addEventListener('click', event => { if(event.target === $('methodDialog')) $('methodDialog').close(); });
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderGraph, 140); });
+initTheme();
+init();

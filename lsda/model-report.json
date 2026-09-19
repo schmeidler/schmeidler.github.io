@@ -1,0 +1,61 @@
+{
+  "sourceFile": "kg.csv",
+  "sourceBytes": 981751236,
+  "sourceRows": 8100498,
+  "sourceDiseases": 17080,
+  "modeledDiseases": 1569,
+  "featureCounts": {
+    "s": 512,
+    "g": 512,
+    "p": 512
+  },
+  "hiddenUnits": 48,
+  "epochs": 60,
+  "seed": 42,
+  "algorithm": "Bernoulli RBM · CD-1",
+  "similarity": "Cosine similarity of mean-centred, L2-normalised hidden logits (before sigmoid)",
+  "saturationFraction": 0.6093,
+  "history": [
+    {
+      "epoch": 1,
+      "bce": 0.131352
+    },
+    {
+      "epoch": 11,
+      "bce": 0.113127
+    },
+    {
+      "epoch": 21,
+      "bce": 0.097962
+    },
+    {
+      "epoch": 31,
+      "bce": 0.089285
+    },
+    {
+      "epoch": 41,
+      "bce": 0.083312
+    },
+    {
+      "epoch": 51,
+      "bce": 0.07885
+    },
+    {
+      "epoch": 60,
+      "bce": 0.075626
+    }
+  ],
+  "diagnostic": {
+    "rbmRecall20": 0.4124,
+    "prevalenceRecall20": 0.1207,
+    "sampleSize": 256,
+    "description": "20% of positive features masked after training; in-sample diagnostic, not an independent test."
+  },
+  "coverage": {
+    "s": 6744,
+    "g": 5593,
+    "p": 5113
+  },
+  "negativePhenotypeDiseases": 686,
+  "embeddingFingerprint": "24356a55f520305113f8698ef7a56c277ef89ead0d34b88dc7c3ac1103585afc"
+}

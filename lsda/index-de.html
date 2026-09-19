@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Interaktives graphbasiertes Netzwerk verwandter Erkrankungen in einem RBM-Latenzraum.">
+  <title>latent space disease atlas</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1' y='1' width='62' height='62' rx='16' fill='white' stroke='black' stroke-width='2'/%3E%3Ctext x='32' y='59.4' text-anchor='middle' font-family='Georgia,serif' font-size='48' fill='black'%3E*%3C/text%3E%3C/svg%3E">
+  <script data-theme-init>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('disease-network-theme') || 'light';
+    } catch {
+      document.documentElement.dataset.theme = 'light';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-left">
+      <div class="language-switch lang-de" aria-label="Sprachauswahl">
+        <a class="lang-link" href="index.html" lang="en" hreflang="en" aria-label="English">
+          <span class="flag-frame" aria-hidden="true">
+            <svg class="flag-icon" viewBox="0 0 30 18" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <g>
+                <rect width="30" height="18" fill="#21468B" />
+                <path d="M-1 -1L31 19M31 -1L-1 19" stroke="#fff" stroke-width="4" stroke-linecap="butt" />
+                <path d="M-1 -1L31 19M31 -1L-1 19" stroke="#C8102E" stroke-width="1.5" stroke-linecap="butt" />
+                <path d="M15 0v18M0 9h30" stroke="#fff" stroke-width="6" stroke-linecap="butt" />
+                <path d="M15 0v18M0 9h30" stroke="#C8102E" stroke-width="3.2" stroke-linecap="butt" />
+              </g>
+            </svg>
+          </span>
+        </a>
+        <a class="lang-link active" href="index-de.html" lang="de" hreflang="de" aria-label="Deutsch" aria-current="page">
+          <span class="flag-frame" aria-hidden="true">
+            <svg class="flag-icon" viewBox="0 0 30 18" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <rect width="30" height="18" fill="#fff" />
+              <rect width="30" height="6" y="0" fill="#C8102E" />
+              <rect width="30" height="6" y="12" fill="#C8102E" />
+            </svg>
+          </span>
+        </a>
+      </div>
+
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Farbschema wechseln" aria-pressed="false" title="Hell / dunkel">
+        <span class="theme-track" aria-hidden="true">
+          <svg class="theme-sun" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3.5"></circle>
+            <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"></path>
+          </svg>
+          <svg class="theme-moon" viewBox="0 0 24 24">
+            <path d="M19 15.5A8 8 0 0 1 8.5 5a8 8 0 1 0 10.5 10.5z"></path>
+          </svg>
+          <span class="theme-knob"></span>
+        </span>
+      </button>
+    </div>
+
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="main-nav" aria-label="Menü öffnen">
+      <span></span>
+      <span></span>
+      <b class="sr-only">Menü öffnen</b>
+    </button>
+
+    <nav id="main-nav" class="nav" aria-label="Bereiche">
+      <a href="#network">Netzwerk</a>
+      <a href="#sources">Quellen</a>
+      <button class="nav-control" id="methodButton" type="button">Modell &amp; Daten</button>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="hero-title-card">
+        <p class="hero-project-kicker">ML-WEBAPP-PROJEKT · PYTHON UND VANILLA JAVASCRIPT</p>
+        <h1 id="pageTitle"><span>latent space disease atlas</span></h1>
+        <p class="hero-project-subtitle">Ein interaktives graphbasiertes Netzwerk zur Exploration von Ähnlichkeiten zwischen Krankheiten in einem von RBM erstellten latenten Raum</p>
+      </div>
+
+      <div class="hero-search-card">
+        <div class="hero-copy-wrap">
+          <p class="hero-copy">Wähle eine Erkrankung, um ihre nächsten Nachbarn und die Beziehungen zwischen ihnen zu erkunden</p>
+        </div>
+
+        <div class="search-area">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6"></circle>
+              <line x1="16" y1="16" x2="21" y2="21"></line>
+            </svg>
+            <input id="search" type="search" placeholder="Name oder MONDO-ID…" autocomplete="off" aria-controls="searchResults">
+          </div>
+          <div id="searchResults" class="search-results" aria-label="Suchergebnisse"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="network-card" id="network" aria-labelledby="diseaseName">
+      <div class="network-heading">
+        <div class="network-title-wrap">
+          <h2 id="diseaseName">Modell wird geladen…</h2>
+          <p id="diseaseMeta" class="disease-meta"></p>
+        </div>
+        <span class="network-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="5" cy="15" r="2.2"></circle>
+            <circle cx="12" cy="6" r="2.2"></circle>
+            <circle cx="19" cy="14" r="2.2"></circle>
+            <path d="M6.5 13.2 10.6 7.8M13.9 7.4l3.4 4.8M7.2 15h9.6"></path>
+          </svg>
+        </span>
+      </div>
+
+      <div id="graph" class="graph" aria-busy="true">
+        <div class="graph-empty">Netzwerk wird geladen…</div>
+      </div>
+
+      <div class="graph-note">
+        <span>Wähle einen Knoten aus, um ihn zum neuen Zentrum zu machen.</span>
+      </div>
+    </section>
+
+    <section class="sources-card" id="sources" aria-labelledby="sourcesTitle">
+      <div class="sources-heading">
+        <h2 id="sourcesTitle">Quellen</h2>
+        <span class="sources-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 5v16M3 4h5a4 4 0 0 1 4 3 4 4 0 0 1 4-3h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3z"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="sources-body">
+        <div class="sources">
+          <ol>
+            <li>Chandak P. et al. <a href="https://doi.org/10.1038/s41597-023-01960-3" target="_blank" rel="noopener">Building a knowledge graph to enable precision medicine.</a></li>
+            <li>Monarch Initiative. <a href="https://mondo.monarchinitiative.org/" target="_blank" rel="noopener">Mondo Disease Ontology.</a></li>
+            <li>Köhler S. et al. <a href="https://hpo.jax.org/" target="_blank" rel="noopener">Human Phenotype Ontology.</a></li>
+            <li>Gillespie M. et al. <a href="https://reactome.org/" target="_blank" rel="noopener">Reactome.</a></li>
+            <li>Hinton G. <a href="https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf" target="_blank" rel="noopener">A Practical Guide to Training Restricted Boltzmann Machines.</a></li>
+          </ol>
+        </div>
+        <p class="sources-note">Verbindungen zeigen Ähnlichkeit in der gelernten Repräsentation, nicht klinische Wahrscheinlichkeit oder Kausalität.</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="methodDialog">
+    <div class="dialog-heading">
+      <div><h2>Modell &amp; Daten</h2></div>
+      <button id="closeDialog" class="close-button" type="button" aria-label="Schließen">×</button>
+    </div>
+    <div id="methodContent"></div>
+  </dialog>
+
+  <div id="status" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>
