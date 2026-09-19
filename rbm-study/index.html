@@ -1800,6 +1800,128 @@
                 opacity:1!important;
             }
         }
+    
+
+        /* Header typography + compact height aligned with the main site */
+        :root {
+            --header-height: 65px;
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            min-height: 0;
+            padding: 14px max(var(--gutter), calc((100% - var(--max)) / 2));
+            border-bottom: 1px solid var(--line);
+            background: var(--bg);
+            color: var(--fg);
+            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .site-nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 7px;
+            margin-left: auto;
+            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+            font-size: .92rem;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .site-nav a {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: transparent;
+            color: var(--fg);
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .site-nav a:hover,
+        .site-nav a:focus-visible {
+            background: var(--fg);
+            color: var(--bg);
+            text-decoration: none;
+        }
+
+        .header-home {
+            width: 36px;
+            height: 36px;
+        }
+
+        .theme-toggle,
+        .theme-track,
+        .language-switch {
+            width: 76px;
+            height: 36px;
+        }
+
+        @media (max-width: 950px) {
+            :root {
+                --header-height: 63px;
+            }
+
+            .site-header {
+                gap: 12px;
+                padding-block: 13px;
+            }
+
+            .site-nav {
+                font-size: .92rem;
+                font-weight: 500;
+            }
+
+            .site-nav a {
+                padding: 12px 16px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            :root {
+                --header-height: 57px;
+            }
+
+            .site-header {
+                padding-block: 11px;
+            }
+
+            .header-left {
+                gap: 9px;
+            }
+
+            .header-home {
+                width: 34px;
+                height: 34px;
+            }
+
+            .theme-toggle,
+            .theme-track,
+            .language-switch {
+                width: 68px;
+                height: 34px;
+            }
+        }
+
     </style>
 </head>
 <body id="anfang">
