@@ -1,0 +1,3137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <meta content="light dark" name="color-scheme"/>
+    <meta content="#ffffff" name="theme-color"/>
+    <meta content="An exploratory case study of RBM pretraining under extreme label scarcity in tabular tumour morphology data. Methods, results and limitations." name="description"/>
+    <meta content="do machines dream of unseen labels?" property="og:title"/>
+    <meta content="Restricted Boltzmann Machines under extreme label scarcity. A case study using tabular tumour morphology data." property="og:description"/>
+    <meta content="article" property="og:type"/>
+    <title>
+        do machines dream of unseen labels? — A Methods Study
+    </title>
+    <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1' y='1' width='62' height='62' rx='16' fill='white' stroke='black' stroke-width='2'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia,serif' font-size='48' fill='black'%3E%3F%3C/text%3E%3C/svg%3E" rel="icon"/>
+    <script>
+        document.documentElement.classList.add('js');
+
+        try {
+            const savedTheme = localStorage.getItem('site-theme');
+            document.documentElement.dataset.theme = savedTheme === 'dark' ? 'dark' : 'light';
+        } catch {
+            document.documentElement.dataset.theme = 'light';
+        }
+    </script>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #ffffff;
+            --fg: #111111;
+            --line: #000000;
+            --muted: #595959;
+            --soft: #f4f4f4;
+            --grid: #dadada;
+            --chart-rbm: #111111;
+            --chart-raw: #646464;
+            --chart-binned: #49746e;
+            --chart-svd: #7c6787;
+            --chart-ae: #8a743d;
+            --font-sans: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+            --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
+            --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+            --max: 1500px;
+            --gutter: 26px;
+            --radius: 34px;
+            --space: 18px;
+            --card-pad: 38px 42px;
+            --header-height: 73px;
+            --switch-width: 76px;
+            --switch-height: 36px;
+            --switch-padding: 4px;
+            --switch-cell-width: 32px;
+            --switch-cell-height: 26px;
+            --switch-gap: 2px;
+            --switch-travel: 34px;
+        }
+
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #111111;
+            --fg: #ffffff;
+            --line: #ffffff;
+            --muted: #bcbcbc;
+            --soft: #1e1e1e;
+            --grid: #454545;
+            --chart-rbm: #ffffff;
+            --chart-raw: #b5b5b5;
+            --chart-binned: #94c9bf;
+            --chart-svd: #c8b2db;
+            --chart-ae: #dac383;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-padding-top: calc(var(--header-height) + 18px);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font: 17px/1.6 var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, p, figure, blockquote, dl {
+            margin: 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration-thickness: 1px;
+            text-underline-offset: .22em;
+        }
+
+        a:hover {
+            text-decoration-thickness: 2px;
+        }
+
+        button, select, input {
+            font: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button, a, input, select, summary {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--fg);
+            outline-offset: 4px;
+        }
+
+        ::selection {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        button:disabled {
+            cursor: default;
+        }
+
+        .shell {
+            width: min(var(--max), calc(100% - 2 * var(--gutter)));
+            margin-inline: auto;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .skip {
+            position: fixed;
+            z-index: 100;
+            left: var(--gutter);
+            top: -90px;
+            padding: 10px 16px;
+            background: var(--fg);
+            color: var(--bg);
+            border-radius: 6px;
+        }
+
+        .skip:focus {
+            top: 8px;
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            min-height: var(--header-height);
+            padding: 17px max(var(--gutter), calc((100% - var(--max)) / 2));
+            border-bottom: 1px solid var(--line);
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 0 0 auto;
+        }
+
+        .header-home {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            text-decoration: none;
+        }
+
+        .header-home svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .header-home:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .site-nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .site-nav a {
+            display: block;
+            padding: 7px 15px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.3;
+            text-decoration: none;
+        }
+
+        .site-nav a:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .menu-toggle {
+            display: none;
+        }
+
+        .theme-toggle, .theme-track {
+            width: var(--switch-width);
+            height: var(--switch-height);
+            flex: 0 0 var(--switch-width);
+        }
+
+        .theme-toggle {
+            appearance: none;
+            display: block;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            line-height: 0;
+        }
+
+        .theme-track {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, var(--switch-cell-width));
+            grid-template-rows: var(--switch-cell-height);
+            align-items: center;
+            gap: var(--switch-gap);
+            padding: var(--switch-padding);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--bg);
+            color: var(--fg);
+            isolation: isolate;
+        }
+
+        .theme-knob {
+            position: absolute;
+            z-index: 0;
+            top: var(--switch-padding);
+            left: var(--switch-padding);
+            width: var(--switch-cell-width);
+            height: var(--switch-cell-height);
+            border-radius: 999px;
+            background: var(--fg);
+            transform: translateX(0);
+            transition: transform 200ms ease;
+            pointer-events: none;
+        }
+
+        html[data-theme="dark"] .theme-knob {
+            transform: translateX(var(--switch-travel));
+        }
+
+        .theme-track svg {
+            position: relative;
+            z-index: 1;
+            display: block;
+            justify-self: center;
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.45;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .theme-track .theme-sun {
+            color: var(--bg);
+        }
+
+        .theme-track .theme-moon {
+            color: var(--fg);
+        }
+
+        html[data-theme="dark"] .theme-track .theme-sun {
+            color: var(--fg);
+        }
+
+        html[data-theme="dark"] .theme-track .theme-moon {
+            color: var(--bg);
+        }
+
+        .study-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+            gap: 0;
+            margin-block: 22px var(--space);
+            align-items: stretch;
+        }
+
+        .hero-title-card, .hero-note {
+            background: var(--bg);
+            border: 1px solid var(--line);
+        }
+
+        .hero-title-card {
+            position: relative;
+            z-index: 2;
+            border-radius: var(--radius);
+            padding: 38px 42px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 365px;
+        }
+
+        .hero-note {
+            position: relative;
+            z-index: 1;
+            margin-left: -1px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .eyebrow {
+            color: var(--muted);
+            font: 500 12px/1.55 var(--font-sans);
+            letter-spacing: .055em;
+            text-transform: uppercase;
+        }
+
+        .hero-title-card .eyebrow {
+            margin-bottom: 24px;
+            max-width: 55ch;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(40px, 4.6vw, 74px);
+            font-weight: 400;
+            line-height: 1.04;
+            letter-spacing: -.043em;
+            overflow-wrap: break-word;
+        }
+
+        h1 em {
+            font-weight: 400;
+        }
+
+        .subtitle {
+            max-width: 48ch;
+            margin-top: 24px;
+            font-size: 18px;
+            line-height: 1.45;
+            color: var(--muted);
+        }
+
+        .note-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .hero-note .note-label {
+            display: block;
+            font: 400 25px/1.18 var(--font-serif);
+            letter-spacing: -.02em;
+            margin-bottom: 15px;
+        }
+
+        .hero-note p + p {
+            border-top: 1px solid var(--line);
+            padding-top: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .content-card {
+            padding: var(--card-pad);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--bg);
+            margin-bottom: var(--space);
+            min-width: 0;
+            scroll-margin-top: 18px;
+        }
+
+        .card-heading {
+            display: grid;
+            grid-template-columns: 44px minmax(0,1fr) 46px;
+            align-items: center;
+            gap: 18px;
+            padding-bottom: 22px;
+            margin-bottom: 27px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .card-heading h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(32px, 3.8vw, 59px);
+            font-weight: 400;
+            line-height: 1.04;
+            letter-spacing: -.035em;
+            min-width: 0;
+        }
+
+        .section-number {
+            font: 400 14px/1.2 var(--font-sans);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .section-icon {
+            width: 46px;
+            height: 46px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            justify-self: end;
+        }
+
+        .section-icon svg {
+            width: 23px;
+            height: 23px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.35;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .heading-without-number {
+            grid-template-columns: minmax(0,1fr) 46px;
+        }
+
+        .article-grid, .chart-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2.8fr) minmax(210px, 1fr);
+            gap: 38px;
+        }
+
+        .body-copy {
+            min-width: 0;
+            grid-column: 1;
+        }
+
+        .prose p {
+            max-width: 74ch;
+        }
+
+        .prose p + p {
+            margin-top: 16px;
+        }
+
+        .abstract .prose {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 32px;
+        }
+
+        .abstract .prose p + p {
+            margin: 0;
+        }
+
+        .sidenote {
+            grid-column: 2;
+            align-self: start;
+            min-width: 0;
+            border-left: 1px solid var(--line);
+            padding-left: 24px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        .sidenote .note-label {
+            display: block;
+            color: var(--fg);
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .sidenote p + p {
+            margin-top: 14px;
+        }
+
+        .sidenote dt {
+            margin-top: 12px;
+            color: var(--fg);
+        }
+
+        .sidenote dd {
+            margin: 0;
+        }
+
+        strong {
+            font-weight: 600;
+        }
+
+        sup {
+            font: 10px/0 var(--font-sans);
+            vertical-align: super;
+        }
+
+        sup a {
+            text-decoration: none;
+            padding: 0 2px;
+        }
+
+        .section h3 {
+            font: 400 24px/1.2 var(--font-serif);
+            margin: 24px 0 12px;
+        }
+
+        .chart-figure {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid var(--line);
+        }
+
+        .figure-head, .delta-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .figure-title {
+            font: 500 15px/1.45 var(--font-sans);
+        }
+
+        .metric-switch {
+            --metric-cell: 62px;
+            --metric-height: 32px;
+            --metric-gap: 2px;
+            --metric-padding: 3px;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, var(--metric-cell));
+            gap: var(--metric-gap);
+            padding: var(--metric-padding);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--bg);
+            overflow: hidden;
+            isolation: isolate;
+            flex: 0 0 auto;
+        }
+
+        .metric-switch::before {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            top: var(--metric-padding);
+            left: var(--metric-padding);
+            width: var(--metric-cell);
+            height: var(--metric-height);
+            border-radius: 999px;
+            background: var(--fg);
+            transform: translateX(0);
+            transition: transform 200ms ease;
+            pointer-events: none;
+        }
+
+        .metric-switch.is-ap::before {
+            transform: translateX(calc(var(--metric-cell) + var(--metric-gap)));
+        }
+
+        .metric-switch button {
+            position: relative;
+            z-index: 1;
+            width: var(--metric-cell);
+            height: var(--metric-height);
+            min-height: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: transparent !important;
+            color: var(--fg);
+            font: 400 13px/1 var(--font-sans);
+            transition: color 200ms ease;
+        }
+
+        .metric-switch button[aria-pressed="true"] {
+            background: transparent !important;
+            color: var(--bg);
+        }
+
+        .metric-switch button:hover, .metric-switch button:active {
+            background: transparent !important;
+        }
+
+        .chart-layout {
+            margin-top: 15px;
+        }
+
+        .plot-wrap {
+            min-width: 0;
+        }
+
+        #learning-chart, #split-chart {
+            display: block;
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+        }
+
+        .chart-note {
+            padding: 19px 0 0 24px;
+            border-left: 1px solid var(--line);
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        .chart-note .label {
+            font-weight: 500;
+            display: block;
+            color: var(--fg);
+            margin-bottom: 10px;
+        }
+
+        .chart-note p + p {
+            margin-top: 14px;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px 20px;
+            margin: 10px 0 0 46px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .legend-line {
+            width: 26px;
+            height: 8px;
+            flex: 0 0 26px;
+            overflow: visible;
+        }
+
+        .figure-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .figure-controls label {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            min-height: 38px;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            accent-color: var(--fg);
+            flex: 0 0 auto;
+        }
+
+        figcaption, .table-note {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.65;
+            max-width: 105ch;
+        }
+
+        .fig-no {
+            color: var(--fg);
+            font-weight: 500;
+        }
+
+        .results-table {
+            margin-top: 28px;
+        }
+
+        .table-scroll {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: auto;
+            scrollbar-color: var(--muted) var(--bg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font: 14px/1.45 var(--font-sans);
+            font-variant-numeric: tabular-nums;
+        }
+
+        caption {
+            text-align: left;
+            padding-bottom: 14px;
+            font-weight: 500;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        th:first-child, td:first-child {
+            padding-left: 0;
+            text-align: left;
+        }
+
+        th:last-child, td:last-child {
+            padding-right: 10px;
+        }
+
+        thead th {
+            font-weight: 500;
+        }
+
+        tbody th {
+            font-weight: 400;
+        }
+
+        thead tr:first-child th {
+            border-top: 1px solid var(--line);
+        }
+
+        .rbm-col {
+            color: var(--fg);
+            background: var(--soft);
+        }
+
+        #all-results tbody th {
+            text-align: left;
+            white-space: normal;
+        }
+
+        .delta-figure {
+            margin-top: 32px;
+            grid-column: 1 / -1;
+            padding-top: 24px;
+            border-top: 1px solid var(--line);
+        }
+
+        .delta-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        select {
+            font: 14px/1.4 var(--font-sans);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 26px 7px 12px;
+            min-height: 36px;
+            background-color: var(--bg);
+        }
+
+        #split-copy {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .minor-label {
+            margin: 14px 0 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .method-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            padding: 18px 0;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        .method-sequence i {
+            font-style: normal;
+            color: var(--muted);
+        }
+
+        .formula {
+            font: 20px/1.65 var(--font-serif);
+            padding-left: 18px;
+            border-left: 1px solid var(--line);
+            margin-block: 22px;
+            overflow-wrap: anywhere;
+        }
+
+        .details-group {
+            margin-top: 28px;
+            border-top: 1px solid var(--line);
+        }
+
+        details {
+            border-bottom: 1px solid var(--line);
+        }
+
+        summary {
+            padding: 16px 0;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        summary::marker {
+            font-size: 12px;
+        }
+
+        .detail-content {
+            padding: 6px 0 24px;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .protocol {
+            display: grid;
+            grid-template-columns: 142px minmax(0,1fr);
+            gap: 16px 24px;
+        }
+
+        .protocol dt {
+            font-weight: 500;
+        }
+
+        .protocol dd {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        code {
+            font: .91em/1.6 var(--font-mono);
+            overflow-wrap: anywhere;
+        }
+
+        .sources {
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .sources h3 {
+            font: 500 15px/1.4 var(--font-sans);
+            margin: 0 0 14px;
+        }
+
+        .sources ol {
+            margin: 0;
+            padding-left: 22px;
+        }
+
+        .sources li {
+            padding-left: 6px;
+            margin-bottom: 13px;
+            scroll-margin-top: 90px;
+            overflow-wrap: anywhere;
+        }
+
+        .license {
+            margin-top: 20px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .site-footer {
+            display: grid;
+            grid-template-columns: 1.15fr .85fr;
+            gap: 0;
+            margin: 0 0 28px;
+        }
+
+        .footer-primary, .footer-secondary {
+            border: 1px solid var(--line);
+            background: var(--bg);
+            padding: 28px 32px;
+        }
+
+        .footer-primary {
+            border-radius: var(--radius);
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-primary .eyebrow {
+            margin-bottom: 10px;
+        }
+
+        .footer-primary > a {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font: 400 clamp(21px,2.2vw,31px)/1.15 var(--font-serif);
+            text-decoration: none;
+        }
+
+        .footer-secondary {
+            margin-left: -1px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 14px 26px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .arrow-icon {
+            display: inline-block;
+            width: .75em;
+            height: .75em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex: 0 0 auto;
+        }
+
+        .noscript {
+            padding: 14px 16px;
+            margin-top: 24px;
+            background: var(--soft);
+            font-size: 14px;
+        }
+
+        .js-only {
+            display: none;
+        }
+
+        .js .js-only {
+            display: block;
+        }
+
+        @media (max-width: 950px) {
+            :root {
+                --header-height: 64px;
+                --card-pad: 30px;
+            }
+            .site-header {
+                padding-block: 13px;
+            }
+            .menu-toggle {
+                position: relative;
+                display: flex;
+                width: 44px;
+                height: 36px;
+                margin: 0 0 0 auto;
+                padding: 0;
+                flex: 0 0 44px;
+                flex-direction: column;
+                justify-content: center;
+                align-items: flex-end;
+                gap: 6px;
+                border: 0;
+                background: transparent;
+            }
+            .menu-toggle > span {
+                display: block;
+                width: 26px;
+                height: 2px;
+                border-radius: 1px;
+                background: var(--fg);
+            }
+            .menu-toggle::before {
+                content: "";
+                position: absolute;
+                top: 50%;
+                right: 0;
+                width: 44px;
+                height: 44px;
+                transform: translateY(-50%);
+            }
+            .site-nav {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--bg);
+                border-bottom: 1px solid var(--line);
+                margin: 0;
+                padding: 15px var(--gutter) 20px;
+                max-height: calc(100dvh - 80px);
+                overflow-y: auto;
+            }
+            .site-nav.open {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .site-nav a {
+                padding: 12px 16px;
+            }
+            .study-hero {
+                grid-template-columns: minmax(0,1.45fr) minmax(250px,1fr);
+            }
+            .hero-title-card {
+                padding: 30px;
+                min-height: 320px;
+            }
+            .hero-note {
+                padding: 24px;
+                font-size: 15px;
+            }
+            .hero-note .note-label {
+                font-size: 23px;
+            }
+            h1 {
+                font-size: clamp(39px,5.5vw,55px);
+            }
+            .article-grid, .chart-layout {
+                grid-template-columns: minmax(0,2.4fr) minmax(175px,1fr);
+                gap: 26px;
+            }
+            .sidenote, .chart-note {
+                padding-left: 18px;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .study-hero {
+                grid-template-columns: minmax(0,1fr);
+            }
+            .hero-title-card {
+                min-height: 0;
+                padding-block: 32px;
+            }
+            .hero-note {
+                margin: -1px 0 0;
+                padding: 25px 30px;
+            }
+            .hero-note p {
+                max-width: 70ch;
+            }
+            .note-topline {
+                margin-bottom: 15px;
+            }
+            .hero-note p + p {
+                margin-top: 14px;
+                padding-top: 14px;
+            }
+            .abstract .prose {
+                display: block;
+            }
+            .abstract .prose p + p {
+                margin-top: 16px;
+            }
+            .article-grid, .chart-layout {
+                display: block;
+            }
+            .sidenote {
+                margin-top: 22px;
+                padding: 18px 0 0;
+                border-left: 0;
+                border-top: 1px solid var(--line);
+            }
+            .chart-note {
+                padding: 18px 0 0;
+                margin-top: 20px;
+                border-left: 0;
+                border-top: 1px solid var(--line);
+            }
+            .chart-note p + p {
+                margin-top: 10px;
+            }
+            .section-icon {
+                width: 40px;
+                height: 40px;
+            }
+            .section-icon svg {
+                width: 21px;
+                height: 21px;
+            }
+            .card-heading {
+                grid-template-columns: 28px minmax(0,1fr) 40px;
+                gap: 12px;
+            }
+            .heading-without-number {
+                grid-template-columns: minmax(0,1fr) 40px;
+            }
+            .protocol {
+                grid-template-columns: minmax(0,1fr);
+                gap: 4px;
+            }
+            .protocol dd {
+                margin-bottom: 14px;
+            }
+            .site-footer {
+                grid-template-columns: minmax(0,1fr);
+            }
+            .footer-secondary {
+                margin: -1px 0 0;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 640px) {
+            :root {
+                --gutter: 12px;
+                --radius: 24px;
+                --space: 12px;
+                --card-pad: 24px 20px;
+                --header-height: 59px;
+                --switch-width: 68px;
+                --switch-height: 34px;
+                --switch-padding: 3px;
+                --switch-cell-width: 29px;
+                --switch-cell-height: 26px;
+                --switch-travel: 31px;
+            }
+            body {
+                font-size: 16px;
+                line-height: 1.6;
+            }
+            .site-header {
+                padding-block: 11px;
+            }
+            .header-left {
+                gap: 9px;
+            }
+            .header-home {
+                width: 34px;
+                height: 34px;
+            }
+            .theme-track svg {
+                width: 12px;
+                height: 12px;
+            }
+            .study-hero {
+                margin-top: 14px;
+            }
+            .hero-title-card {
+                padding: 28px 24px;
+            }
+            h1 {
+                font-size: clamp(36px,9vw,51px);
+                line-height: 1.04;
+                letter-spacing: -.035em;
+            }
+            .title-break {
+                display: none;
+            }
+            .eyebrow {
+                font-size: 11px;
+            }
+            .hero-title-card .eyebrow {
+                margin-bottom: 20px;
+            }
+            .subtitle {
+                font-size: 17px;
+                margin-top: 20px;
+            }
+            .hero-note {
+                padding: 22px 24px;
+            }
+            .card-heading {
+                padding-bottom: 18px;
+                margin-bottom: 20px;
+            }
+            .card-heading h2 {
+                font-size: clamp(29px,7.5vw,43px);
+                letter-spacing: -.025em;
+            }
+            .section-number {
+                font-size: 12px;
+            }
+            .figure-title {
+                font-size: 14px;
+            }
+            .chart-figure {
+                margin-top: 24px;
+                padding-top: 20px;
+            }
+            .legend {
+                margin-left: 0;
+                gap: 8px 14px;
+            }
+            .figure-controls {
+                gap: 0 16px;
+            }
+            th, td {
+                font-size: 13px;
+                padding: 10px 8px;
+            }
+            th:last-child, td:last-child {
+                padding-right: 8px;
+            }
+            figcaption {
+                font-size: 12px;
+            }
+            .footer-primary, .footer-secondary {
+                padding: 24px;
+            }
+            .site-footer {
+                margin-bottom: 16px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            :root {
+                --card-pad: 22px 16px;
+            }
+            .card-heading {
+                grid-template-columns: 22px minmax(0,1fr) 36px;
+                gap: 8px;
+            }
+            .heading-without-number {
+                grid-template-columns: minmax(0,1fr) 36px;
+            }
+            .section-icon {
+                width: 36px;
+                height: 36px;
+            }
+            .hero-title-card {
+                padding: 25px 20px;
+            }
+            .hero-note {
+                padding: 22px 20px;
+            }
+            .card-heading h2 {
+                font-size: 28px;
+                overflow-wrap: break-word;
+            }
+        }
+
+        html:not(.js) .theme-toggle, html:not(.js) .menu-toggle {
+            display: none;
+        }
+
+        html:not(.js) .site-header {
+            position: relative;
+            flex-wrap: wrap;
+        }
+
+        html:not(.js) .site-nav {
+            position: static;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            max-height: none;
+            overflow: visible;
+            border: 0;
+            padding: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+
+        @media print {
+            :root, html[data-theme="dark"] {
+                color-scheme: light;
+                --bg: #fff;
+                --fg: #111;
+                --line: #111;
+                --muted: #555;
+                --soft: #f4f4f4;
+                --grid: #ddd;
+                --chart-rbm: #111;
+                --chart-raw: #666;
+                --chart-binned: #49746e;
+                --chart-svd: #7c6787;
+                --chart-ae: #8a743d;
+            }
+            body {
+                font-size: 11pt;
+            }
+            .shell {
+                width: 100%;
+            }
+            .site-header, .site-footer, .skip, .metric-switch, .figure-controls, .delta-select {
+                display: none !important;
+            }
+            .study-hero {
+                display: block;
+                margin-top: 0;
+            }
+            .hero-title-card {
+                min-height: 0;
+                border: 0;
+                padding: 0 0 14pt;
+            }
+            h1 {
+                font-size: 32pt;
+            }
+            .subtitle {
+                font-size: 13pt;
+            }
+            .hero-note {
+                margin: 0 0 16pt;
+                padding: 12pt;
+            }
+            .content-card {
+                padding: 15pt 0;
+                border: 0;
+                border-top: 1px solid #111;
+                border-radius: 0;
+            }
+            .card-heading {
+                margin-bottom: 13pt;
+                padding-bottom: 10pt;
+            }
+            .card-heading h2 {
+                font-size: 24pt;
+            }
+            .card-heading .section-icon, .note-topline .section-icon {
+                display: none;
+            }
+            .article-grid, .chart-layout {
+                display: block;
+            }
+            .sidenote, .chart-note {
+                margin-top: 12pt;
+                padding: 10pt 0 0;
+                border: 0;
+            }
+            figure, tr {
+                break-inside: avoid;
+            }
+            .table-scroll {
+                overflow: visible;
+            }
+            table {
+                font-size: 9pt;
+            }
+            .detail-content {
+                display: block !important;
+            }
+        }
+
+        :root {
+            --switch-duration: 200ms;
+            --switch-easing: ease;
+            --flag-width: 24px;
+            --flag-height: 14px;
+        }
+
+        .language-switch {
+            box-sizing: border-box;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, var(--switch-cell-width));
+            grid-template-rows: var(--switch-cell-height);
+            align-items: center;
+            gap: var(--switch-gap);
+            width: var(--switch-width);
+            min-width: var(--switch-width);
+            max-width: var(--switch-width);
+            height: var(--switch-height);
+            min-height: var(--switch-height);
+            margin: 0;
+            padding: var(--switch-padding);
+            flex: 0 0 var(--switch-width);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--bg);
+            color: var(--fg);
+            isolation: isolate;
+        }
+
+        .language-switch::before {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            top: var(--switch-padding);
+            left: var(--switch-padding);
+            width: var(--switch-cell-width);
+            height: var(--switch-cell-height);
+            border-radius: 999px;
+            background: var(--fg);
+            pointer-events: none;
+            transform: translateX(0);
+            transition: transform var(--switch-duration) var(--switch-easing);
+        }
+
+        .language-switch.lang-de::before {
+            transform: translateX(var(--switch-travel));
+        }
+
+        .language-switch .lang-link {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            width: var(--switch-cell-width);
+            height: var(--switch-cell-height);
+            min-width: 0;
+            min-height: 0;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: inherit;
+            opacity: 1;
+            line-height: 0;
+            text-decoration: none;
+        }
+
+        .language-switch .flag-frame {
+            --flag-line: #000000;
+            position: relative;
+            display: block;
+            width: var(--flag-width);
+            height: var(--flag-height);
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 2px;
+            overflow: hidden;
+            background: transparent;
+            isolation: isolate;
+        }
+
+        .language-switch .lang-link.active .flag-frame {
+            --flag-line: #ffffff;
+        }
+
+        html[data-theme="dark"] .language-switch .flag-frame {
+            --flag-line: #ffffff;
+        }
+
+        html[data-theme="dark"] .language-switch .lang-link.active .flag-frame {
+            --flag-line: #000000;
+        }
+
+        .language-switch .flag-icon {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            opacity: 1;
+        }
+
+        .language-switch .flag-frame::after {
+            content: "";
+            position: absolute;
+            z-index: 2;
+            inset: 0;
+            box-sizing: border-box;
+            border: 1px solid var(--flag-line);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .language-switch .lang-link:focus-visible {
+            outline: 2px solid var(--fg);
+            outline-offset: 2px;
+        }
+
+        .overview-definition {
+            grid-column: 1 / -1;
+            margin-top: 4px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        .overview-definition .note-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--fg);
+        }
+
+        .overview-definition p {
+            max-width: 76ch;
+            color: var(--muted);
+        }
+
+        .back-row {
+            margin: 2px 0 var(--space);
+        }
+
+        .back-row a {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .back-row a:hover {
+            text-decoration: underline;
+        }
+
+        .back-row .arrow-left {
+            width: 18px;
+            height: 18px;
+        }
+
+        @media (max-width: 640px) {
+            :root {
+                --flag-width: 21px;
+                --flag-height: 12px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .language-switch::before {
+                transition: none;
+            }
+        }
+
+        .hero-symbol-card {
+            --page-line:var(--line);
+            --page-fg:var(--fg);
+            position:relative;
+            z-index:1;
+            margin-left:-1.25px;
+            min-height:360px;
+            display:grid !important;
+            grid-template-columns:minmax(0,1fr);
+            place-items:center !important;
+            padding:28px !important;
+            overflow:hidden;
+            background:var(--bg);
+            border:1px solid var(--line);
+            border-radius:0;
+        }
+
+        .hero-symbol-card .abstract-grid {
+            width:min(92%,500px) !important;
+            aspect-ratio:4 / 3 !important;
+            display:grid !important;
+            grid-template-columns:repeat(8,minmax(0,1fr)) !important;
+            grid-template-rows:repeat(6,minmax(0,1fr)) !important;
+            gap:6px !important;
+            overflow:hidden;
+        }
+
+        .hero-symbol-card .abstract-cell {
+            position:relative;
+            display:grid;
+            place-items:center;
+            min-width:0;
+            min-height:0;
+            border:0 !important;
+            border-radius:0 !important;
+            overflow:visible !important;
+        }
+
+        .hero-symbol-card .abstract-cell::before {
+            content:"";
+            display:block;
+            width:72%;
+            height:72%;
+            box-sizing:border-box;
+            border:1.15px solid var(--page-line);
+            background:transparent;
+            transform:translate(var(--dx),var(--dy)) scale(var(--shape-scale));
+            transform-origin:center;
+        }
+
+        .hero-symbol-card .abstract-cell.shape-circle::before {
+            border-radius:50%;
+        }
+
+        .hero-symbol-card .abstract-cell.shape-pill::before {
+            width:84%;
+            height:38%;
+            border-radius:999px;
+        }
+
+        .hero-symbol-card .abstract-cell.shape-bar::before {
+            width:84%;
+            height:18%;
+            border-radius:0;
+        }
+
+        .hero-symbol-card .abstract-cell.shape-diamond::before {
+            width:56%;
+            height:56%;
+            transform:translate(var(--dx),var(--dy)) rotate(45deg) scale(var(--shape-scale));
+        }
+
+        .hero-symbol-card .abstract-cell.shape-triangle::before {
+            width:70% !important;
+            height:70% !important;
+            border:0 !important;
+            background:var(--page-fg) !important;
+            clip-path:polygon(50% 4%,96% 94%,4% 94%) !important;
+            opacity:.08;
+            animation:geoTriangleFillV22 var(--dur) steps(1,end) var(--delay) infinite !important;
+        }
+
+        .hero-symbol-card .abstract-grid > span::after {
+            content:none !important;
+            display:none !important;
+            animation:none !important;
+        }
+
+        .hero-symbol-card .abstract-cell.shape-square::before, .hero-symbol-card .abstract-cell.shape-circle::before, .hero-symbol-card .abstract-cell.shape-pill::before, .hero-symbol-card .abstract-cell.shape-bar::before, .hero-symbol-card .abstract-cell.shape-diamond::before {
+            background:transparent !important;
+            border-color:var(--page-line) !important;
+            box-shadow:inset 0 0 0 0 var(--page-fg);
+            animation:geoCellFill var(--dur) steps(1,end) var(--delay) infinite !important;
+        }
+
+        @keyframes geoCellFill {
+            0%,11% {
+                box-shadow:inset 0 0 0 0 var(--page-fg);
+                opacity:.58;
+            }
+            12%,29% {
+                box-shadow:inset 0 0 0 100px var(--page-fg);
+                opacity:1;
+            }
+            30%,43% {
+                box-shadow:inset 0 0 0 0 var(--page-fg);
+                opacity:.82;
+            }
+            44%,56% {
+                box-shadow:inset 0 0 0 100px var(--page-fg);
+                opacity:1;
+            }
+            57%,72% {
+                box-shadow:inset 0 0 0 0 var(--page-fg);
+                opacity:.48;
+            }
+            73%,80% {
+                box-shadow:inset 0 0 0 100px var(--page-fg);
+                opacity:.9;
+            }
+            81%,100% {
+                box-shadow:inset 0 0 0 0 var(--page-fg);
+                opacity:.68;
+            }
+        }
+
+        @keyframes geoTriangleFillV22 {
+            0%,13%,40%,68%,100% {
+                opacity:.08;
+                transform:translate(var(--dx),var(--dy)) scale(.72);
+            }
+            14%,31% {
+                opacity:1;
+                transform:translate(var(--dx),var(--dy)) scale(.96);
+            }
+            41%,55% {
+                opacity:.34;
+                transform:translate(var(--dx),var(--dy)) scale(.82);
+            }
+            56%,67% {
+                opacity:1;
+                transform:translate(var(--dx),var(--dy)) scale(.94);
+            }
+        }
+
+        @media(max-width:950px) {
+            .hero-symbol-card {
+                margin-left:0;
+                margin-top:-1.25px;
+                min-height:300px;
+                padding:24px !important;
+            }
+            .hero-symbol-card .abstract-grid {
+                width:min(94%,520px) !important;
+                aspect-ratio:16/9 !important;
+            }
+        }
+
+        @media(max-width:640px) {
+            .hero-symbol-card {
+                min-height:250px !important;
+                padding:20px !important;
+            }
+            .hero-symbol-card .abstract-grid {
+                grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+                grid-template-rows:repeat(7,minmax(0,1fr)) !important;
+                gap:5px !important;
+                aspect-ratio:1 !important;
+                width:min(94%,320px) !important;
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            .hero-symbol-card .abstract-cell.shape-square::before, .hero-symbol-card .abstract-cell.shape-circle::before, .hero-symbol-card .abstract-cell.shape-pill::before, .hero-symbol-card .abstract-cell.shape-bar::before, .hero-symbol-card .abstract-cell.shape-diamond::before {
+                animation:none !important;
+                box-shadow:none !important;
+            }
+            .hero-symbol-card .abstract-cell:nth-child(3n)::before {
+                box-shadow:inset 0 0 0 100px var(--page-fg) !important;
+                opacity:1 !important;
+            }
+            .hero-symbol-card .abstract-cell.shape-triangle::before {
+                animation:none !important;
+            }
+        }
+
+        .abstract .prose {
+            display:block;
+        }
+
+        .abstract .prose p + p {
+            margin-top:16px;
+        }
+
+        .footer-name-text {
+            margin:0;
+            font:400 clamp(28px,2.5vw,40px)/1.05 Georgia, "Times New Roman", serif;
+            letter-spacing:-.035em;
+        }
+
+        @media(max-width:950px) {
+            .hero-animation-card {
+                margin:-1px 0 0;
+                min-height:280px;
+                padding:24px;
+            }
+            .hero-animation-card .abstract-grid {
+                width:min(92%,430px);
+            }
+        }
+
+        @media(max-width:640px) {
+            .hero-animation-card {
+                min-height:235px;
+                padding:20px;
+            }
+            .hero-animation-card .abstract-grid {
+                width:min(94%,320px);
+                gap:5px;
+            }
+            .footer-name-text {
+                font-size:30px;
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            .hero-animation-card .abstract-cell::before {
+                animation:none!important;
+                box-shadow:none!important;
+                opacity:.68!important;
+            }
+            .hero-animation-card .abstract-cell:nth-child(3n)::before {
+                box-shadow:inset 0 0 0 100px var(--fg)!important;
+                opacity:1!important;
+            }
+            .hero-animation-card .abstract-cell.shape-triangle:nth-child(3n)::before {
+                box-shadow:none!important;
+                opacity:1!important;
+            }
+        }
+    </style>
+</head>
+<body id="anfang">
+<a class="skip" href="#inhalt">
+    Skip to content
+</a>
+<header class="site-header">
+    <div class="header-left">
+        <div aria-label="Language selection" class="language-switch lang-en">
+            <a aria-current="page" aria-label="English" class="lang-link active" href="index.html" hreflang="en" lang="en">
+      <span aria-hidden="true" class="flag-frame">
+       <svg aria-hidden="true" class="flag-icon" focusable="false" preserveaspectratio="none" viewbox="0 0 30 18" xmlns="http://www.w3.org/2000/svg">
+        <g>
+         <rect fill="#21468B" height="18" width="30">
+         </rect>
+         <path d="M-1 -1L31 19M31 -1L-1 19" stroke="#fff" stroke-linecap="butt" stroke-width="4">
+         </path>
+         <path d="M-1 -1L31 19M31 -1L-1 19" stroke="#C8102E" stroke-linecap="butt" stroke-width="1.5">
+         </path>
+         <path d="M15 0v18M0 9h30" stroke="#fff" stroke-linecap="butt" stroke-width="6">
+         </path>
+         <path d="M15 0v18M0 9h30" stroke="#C8102E" stroke-linecap="butt" stroke-width="3.2">
+         </path>
+        </g>
+       </svg>
+      </span>
+            </a>
+            <a aria-label="Deutsch" class="lang-link" href="index-de.html" hreflang="de" lang="de">
+      <span aria-hidden="true" class="flag-frame">
+       <svg aria-hidden="true" class="flag-icon" focusable="false" preserveaspectratio="none" viewbox="0 0 30 18" xmlns="http://www.w3.org/2000/svg">
+        <rect fill="#fff" height="18" width="30">
+        </rect>
+        <rect fill="#C8102E" height="6" width="30" y="0">
+        </rect>
+        <rect fill="#C8102E" height="6" width="30" y="12">
+        </rect>
+       </svg>
+      </span>
+            </a>
+        </div>
+        <button aria-label="Change colour scheme" aria-pressed="false" class="theme-toggle" title="Light / Dark" type="button">
+     <span aria-hidden="true" class="theme-track">
+      <svg class="theme-sun" viewbox="0 0 24 24">
+       <circle cx="12" cy="12" r="3.5">
+       </circle>
+       <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1">
+       </path>
+      </svg>
+      <svg class="theme-moon" viewbox="0 0 24 24">
+       <path d="M19 15.5A8 8 0 0 1 8.5 5a8 8 0 1 0 10.5 10.5z">
+       </path>
+      </svg>
+      <span class="theme-knob">
+      </span>
+     </span>
+        </button>
+    </div>
+    <button aria-controls="study-nav" aria-expanded="false" aria-label="Open menu" class="menu-toggle" type="button">
+    <span>
+    </span>
+        <span>
+    </span>
+        <span class="sr-only">
+     Open menu
+    </span>
+    </button>
+    <nav aria-label="Sections of the methods study" class="site-nav" id="study-nav">
+        <a href="#ueberblick">
+            Overview
+        </a>
+        <a href="#ergebnisse">
+            Results
+        </a>
+        <a href="#methodik">
+            Methods
+        </a>
+        <a href="#einordnung">
+            Interpretation
+        </a>
+        <a href="#material">
+            Sources
+        </a>
+    </nav>
+</header>
+<div class="shell">
+    <main id="inhalt">
+        <article aria-labelledby="title">
+            <div class="study-hero">
+                <header class="article-head hero-title-card">
+                    <p class="eyebrow">
+                        ML PROJECT · PYTHON
+                    </p>
+                    <h1 id="title">
+                        do machines dream
+                        <br class="title-break"/>
+                        of
+                        <em>
+                            unseen labels?
+                        </em>
+                    </h1>
+                    <p class="subtitle">
+                        Restricted Boltzmann Machines under extreme label scarcity
+                    </p>
+                </header>
+                <div aria-hidden="true" class="hero-symbol-card">
+                    <div aria-hidden="true" class="abstract-grid">
+                    </div>
+                </div>
+            </div>
+            <div aria-labelledby="overview-heading" class="content-card abstract" id="ueberblick">
+                <div class="card-heading heading-without-number">
+                    <h2 id="overview-heading">
+                        Overview
+                    </h2>
+                    <span aria-hidden="true" class="section-icon">
+        <svg viewbox="0 0 24 24">
+         <circle cx="12" cy="12" r="8.5">
+         </circle>
+         <path d="M12 11v6M12 7v.5">
+         </path>
+        </svg>
+       </span>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy prose">
+                        <p>
+                            Can unsupervised pretraining help when only a handful of diagnostic labels are available for training? In this experiment, a Restricted Boltzmann Machine (RBM) first learns from unlabelled morphology profiles. Its representation is then used for classification with only a few benign and malignant examples.
+                        </p>
+                        <p>
+                            With two to three labels per class, the RBM is slightly ahead of direct logistic regression on average. With five to ten labels, this advantage is no longer observed. This result applies to this dataset and the model configurations examined here.
+                        </p>
+                    </div>
+                    <aside class="sidenote">
+        <span class="note-label">
+         What “unlabelled” means here
+        </span>
+                        <p>
+                            The features are available, but the diagnoses are hidden during pretraining. The RBM does not generate new labels. The final classifier receives genuine diagnostic labels.
+                        </p>
+                    </aside>
+                </div>
+            </div>
+            <section aria-labelledby="results-heading" class="section content-card" id="ergebnisse">
+                <div class="card-heading">
+       <span class="section-number">
+        01
+       </span>
+                    <h2 id="results-heading">
+                        Results
+                    </h2>
+                    <span aria-hidden="true" class="section-icon">
+        <svg viewbox="0 0 24 24">
+         <path d="M4 3v17h17M8 15l4-5 4 2 5-7">
+         </path>
+        </svg>
+       </span>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy prose">
+                        <p>
+                            With two labelled cases per class, the RBM representation achieves a mean AUROC of
+                            <strong>
+                                0.9691
+                            </strong>
+                            ; direct logistic regression achieves
+                            <strong>
+                                0.9582
+                            </strong>
+                            . The difference is 0.0109. As the number of labels increases, direct logistic regression improves in particular, while the RBM curve remains largely flat.
+                        </p>
+                    </div>
+                    <aside class="sidenote">
+        <span class="note-label">
+         How to read the metrics
+        </span>
+                        <p>
+                            AUROC measures ranking performance, not accuracy. Average Precision (AP) summarises the precision–recall curve. Positive class: malignant lesion.
+                            <sup>
+                                <a aria-label="Source 3" href="#quelle-3">
+                                    3
+                                </a>
+                            </sup>
+                        </p>
+                    </aside>
+                </div>
+                <noscript>
+                    <p class="noscript">
+                        The tables contain all results. JavaScript is required for the interactive charts.
+                    </p>
+                </noscript>
+                <figure aria-labelledby="fig-one-title" class="chart-figure js-only">
+                    <div class="figure-head">
+        <span class="figure-title" id="fig-one-title">
+         Figure 1. Performance by number of labels
+        </span>
+                        <div aria-label="Chart metric" class="metric-switch" role="group">
+                            <button aria-pressed="true" data-metric="auroc" type="button">
+                                AUROC
+                            </button>
+                            <button aria-pressed="false" data-metric="auprc" type="button">
+                                AP
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-layout">
+                        <div class="plot-wrap">
+                            <svg aria-labelledby="chart-title chart-desc" id="learning-chart" role="img">
+                            </svg>
+                            <div aria-label="Legende" class="legend" id="legend">
+                            </div>
+                            <div class="figure-controls">
+                                <label>
+                                    <input id="other-models" type="checkbox"/>
+                                    Additional comparison models
+                                </label>
+                                <label>
+                                    <input id="show-spread" type="checkbox"/>
+                                    Show variability
+                                </label>
+                                <label>
+                                    <input id="full-scale" type="checkbox"/>
+                                    Scale from 0 to 1
+                                </label>
+                            </div>
+                        </div>
+                        <aside class="chart-note">
+         <span class="label">
+          For comparison
+         </span>
+                            <p>
+                                Within each split, all models receive the same labelled examples. The RBM additionally uses the structure of the unlabelled training pool.
+                            </p>
+                            <p>
+                                Direct logistic regression also uses this pool to scale its inputs. It is not a baseline trained exclusively on four raw data points.
+                            </p>
+                        </aside>
+                    </div>
+                    <figcaption>
+        <span class="fig-no">
+         Fig. 1.
+        </span>
+                        Means from ten stratified splits with 50 label draws each. Lines connect separately evaluated label budgets; they do not represent progressive annotation of the same cases. Optional: ± one standard deviation of the ten split means for the RBM and direct logistic regression. This variability is
+                        <strong>
+                            not a confidence interval
+                        </strong>
+                        .
+                        <span id="axis-note">
+         The y-axis shows a range from 0.70 to 1.00.
+        </span>
+                    </figcaption>
+                </figure>
+                <div class="article-grid results-table">
+                    <div class="body-copy">
+                        <div aria-label="Comparison of RBM and direct logistic regression" class="table-scroll" role="region" tabindex="0">
+                            <table id="main-table">
+                                <caption>
+                                    Table 1. Mean results for the main comparison
+                                </caption>
+                                <thead>
+                                <tr>
+                                    <th rowspan="2" scope="col">
+                                        Labels
+                                        <br/>
+                                        per class
+                                    </th>
+                                    <th colspan="2" scope="colgroup">
+                                        AUROC
+                                    </th>
+                                    <th colspan="2" scope="colgroup">
+                                        Average Precision
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th scope="col">
+                                        Logistic
+                                    </th>
+                                    <th class="rbm-col" scope="col">
+                                        RBM
+                                    </th>
+                                    <th scope="col">
+                                        Logistic
+                                    </th>
+                                    <th class="rbm-col" scope="col">
+                                        RBM
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <th scope="row">
+                                        2
+                                    </th>
+                                    <td>
+                                        0.9582
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9691
+                                    </td>
+                                    <td>
+                                        0.9392
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9616
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        3
+                                    </th>
+                                    <td>
+                                        0.9673
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9729
+                                    </td>
+                                    <td>
+                                        0.9512
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9646
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        5
+                                    </th>
+                                    <td>
+                                        0.9758
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9729
+                                    </td>
+                                    <td>
+                                        0.9647
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9646
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        10
+                                    </th>
+                                    <td>
+                                        0.9807
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9729
+                                    </td>
+                                    <td>
+                                        0.9730
+                                    </td>
+                                    <td class="rbm-col">
+                                        0.9646
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <aside class="sidenote">
+        <span class="note-label">
+         No independent cohorts
+        </span>
+                        <p>
+                            The ten splits use the same dataset and their cases overlap. The means describe this benchmark.
+                        </p>
+                    </aside>
+                </div>
+                <div class="article-grid">
+                    <figure aria-labelledby="fig-two-title" class="body-copy delta-figure js-only">
+                        <div class="delta-head">
+         <span class="figure-title" id="fig-two-title">
+          Figure 2. Differences by split
+         </span>
+                            <label class="delta-select" for="budget">
+                                Labels per class
+                                <select id="budget">
+                                    <option value="2">
+                                        2
+                                    </option>
+                                    <option value="3">
+                                        3
+                                    </option>
+                                    <option value="5">
+                                        5
+                                    </option>
+                                    <option value="10">
+                                        10
+                                    </option>
+                                </select>
+                            </label>
+                        </div>
+                        <p class="minor-label" id="difference-label">
+                            AUROC: RBM minus direct logistic regression
+                        </p>
+                        <svg aria-labelledby="split-title split-desc" id="split-chart" role="img">
+                        </svg>
+                        <p aria-live="polite" id="split-copy">
+                        </p>
+                        <figcaption>
+         <span class="fig-no">
+          Fig. 2.
+         </span>
+                            Each point is the mean difference for one split across 50 paired label draws. The diamond marks the overall mean. Positive values favour the RBM. This display is descriptive as well.
+                        </figcaption>
+                    </figure>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy details-group">
+                        <details id="all-results">
+                            <summary>
+                                Full results table: all five models
+                            </summary>
+                            <div aria-label="All model metrics" class="detail-content table-scroll" role="region" tabindex="0">
+                                <table>
+                                    <caption class="sr-only">
+                                        Alle Label-Budgets und Modelle
+                                    </caption>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">
+                                            Labels/class
+                                        </th>
+                                        <th scope="col">
+                                            Representation + logistic regression
+                                        </th>
+                                        <th scope="col">
+                                            AUROC
+                                        </th>
+                                        <th scope="col">
+                                            AP
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>
+                                            2
+                                        </td>
+                                        <th scope="row">
+                                            Direct logistic regression
+                                        </th>
+                                        <td>
+                                            0.9582
+                                        </td>
+                                        <td>
+                                            0.9392
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            2
+                                        </td>
+                                        <th scope="row">
+                                            Binned logistic regression
+                                        </th>
+                                        <td>
+                                            0.9106
+                                        </td>
+                                        <td>
+                                            0.8773
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            2
+                                        </td>
+                                        <th scope="row">
+                                            SVD-32
+                                        </th>
+                                        <td>
+                                            0.7733
+                                        </td>
+                                        <td>
+                                            0.6965
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            2
+                                        </td>
+                                        <th scope="row">
+                                            Autoencoder-32
+                                        </th>
+                                        <td>
+                                            0.8953
+                                        </td>
+                                        <td>
+                                            0.8540
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            2
+                                        </td>
+                                        <th scope="row">
+                                            RBM-32
+                                        </th>
+                                        <td>
+                                            0.9691
+                                        </td>
+                                        <td>
+                                            0.9616
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3
+                                        </td>
+                                        <th scope="row">
+                                            Direct logistic regression
+                                        </th>
+                                        <td>
+                                            0.9673
+                                        </td>
+                                        <td>
+                                            0.9512
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3
+                                        </td>
+                                        <th scope="row">
+                                            Binned logistic regression
+                                        </th>
+                                        <td>
+                                            0.9386
+                                        </td>
+                                        <td>
+                                            0.9145
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3
+                                        </td>
+                                        <th scope="row">
+                                            SVD-32
+                                        </th>
+                                        <td>
+                                            0.8186
+                                        </td>
+                                        <td>
+                                            0.7539
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3
+                                        </td>
+                                        <th scope="row">
+                                            Autoencoder-32
+                                        </th>
+                                        <td>
+                                            0.9276
+                                        </td>
+                                        <td>
+                                            0.8982
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            3
+                                        </td>
+                                        <th scope="row">
+                                            RBM-32
+                                        </th>
+                                        <td>
+                                            0.9729
+                                        </td>
+                                        <td>
+                                            0.9646
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5
+                                        </td>
+                                        <th scope="row">
+                                            Direct logistic regression
+                                        </th>
+                                        <td>
+                                            0.9758
+                                        </td>
+                                        <td>
+                                            0.9647
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5
+                                        </td>
+                                        <th scope="row">
+                                            Binned logistic regression
+                                        </th>
+                                        <td>
+                                            0.9598
+                                        </td>
+                                        <td>
+                                            0.9451
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5
+                                        </td>
+                                        <th scope="row">
+                                            SVD-32
+                                        </th>
+                                        <td>
+                                            0.8725
+                                        </td>
+                                        <td>
+                                            0.8272
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5
+                                        </td>
+                                        <th scope="row">
+                                            Autoencoder-32
+                                        </th>
+                                        <td>
+                                            0.9518
+                                        </td>
+                                        <td>
+                                            0.9321
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            5
+                                        </td>
+                                        <th scope="row">
+                                            RBM-32
+                                        </th>
+                                        <td>
+                                            0.9729
+                                        </td>
+                                        <td>
+                                            0.9646
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            10
+                                        </td>
+                                        <th scope="row">
+                                            Direct logistic regression
+                                        </th>
+                                        <td>
+                                            0.9807
+                                        </td>
+                                        <td>
+                                            0.9730
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            10
+                                        </td>
+                                        <th scope="row">
+                                            Binned logistic regression
+                                        </th>
+                                        <td>
+                                            0.9721
+                                        </td>
+                                        <td>
+                                            0.9626
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            10
+                                        </td>
+                                        <th scope="row">
+                                            SVD-32
+                                        </th>
+                                        <td>
+                                            0.9283
+                                        </td>
+                                        <td>
+                                            0.9035
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            10
+                                        </td>
+                                        <th scope="row">
+                                            Autoencoder-32
+                                        </th>
+                                        <td>
+                                            0.9667
+                                        </td>
+                                        <td>
+                                            0.9546
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            10
+                                        </td>
+                                        <th scope="row">
+                                            RBM-32
+                                        </th>
+                                        <td>
+                                            0.9729
+                                        </td>
+                                        <td>
+                                            0.9646
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </section>
+            <section aria-labelledby="method-heading" class="section content-card" id="methodik">
+                <div class="card-heading">
+       <span class="section-number">
+        02
+       </span>
+                    <h2 id="method-heading">
+                        Methods
+                    </h2>
+                    <span aria-hidden="true" class="section-icon">
+        <svg viewbox="0 0 24 24">
+         <path d="M4 6h16M4 12h16M4 18h16">
+         </path>
+         <circle cx="8" cy="6" r="2">
+         </circle>
+         <circle cx="16" cy="12" r="2">
+         </circle>
+         <circle cx="10" cy="18" r="2">
+         </circle>
+        </svg>
+       </span>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy prose">
+                        <p>
+                            The Wisconsin Diagnostic Breast Cancer dataset (WDBC) contains 569 cases with 30 numeric cell-nucleus features. These features were computed from digitised fine-needle aspirates of breast lesions. This analysis uses the tabular features, not the original images.
+                            <sup>
+                                <a aria-label="Source 1" href="#quelle-1">
+                                    1
+                                </a>
+                            </sup>
+                        </p>
+                        <p>
+                            For each split, 426 cases form the training pool and 143 are held out as test cases. Scaling, discretisation and representation learning are fitted only within the training pool. The test cases are also excluded from unsupervised pretraining.
+                        </p>
+                        <div aria-label="Modellablauf" class="method-sequence">
+         <span>
+          30 morphology features
+         </span>
+                            <i aria-hidden="true">
+                                →
+                            </i>
+                            <span>
+          Quantile encoding
+         </span>
+                            <i aria-hidden="true">
+                                →
+                            </i>
+                            <span>
+          RBM with 32 units
+         </span>
+                            <i aria-hidden="true">
+                                →
+                            </i>
+                            <span>
+          Logistic regression
+         </span>
+                        </div>
+                        <p>
+                            Continuous features are divided into up to five quantile bins and binarised. A Bernoulli RBM learns joint patterns in these inputs without using diagnostic labels. Its activation probabilities are then used as 32 features for a regularised logistic regression.
+                            <sup>
+                                <a aria-label="Source 2" href="#quelle-2">
+                                    2
+                                </a>
+                            </sup>
+                        </p>
+                        <p aria-label="Aktivierungswahrscheinlichkeit einer verborgenen Einheit" class="formula">
+                            h
+                            <sub>
+                                j
+                            </sub>
+                            (x) = P(H
+                            <sub>
+                                j
+                            </sub>
+                            = 1 | x) = σ(b
+                            <sub>
+                                j
+                            </sub>
+                            + w
+                            <sub>
+                                j
+                            </sub>
+                            <sup>
+                                T
+                            </sup>
+                            x)
+                        </p>
+                        <p>
+                            The classifier receives two, three, five or ten examples of each class. Each configuration is evaluated with 50 random label draws per split. Comparisons include direct continuous logistic regression, binned logistic regression, SVD, autoencoder and RBM. SVD and the autoencoder use 32 latent dimensions, as does the RBM.
+                        </p>
+                    </div>
+                    <aside class="sidenote">
+        <span class="note-label">
+         Dataset and target
+        </span>
+                        <dl>
+                            <dt>
+                                Cases
+                            </dt>
+                            <dd>
+                                357 benign, 212 malignant
+                            </dd>
+                            <dt>
+                                Task
+                            </dt>
+                            <dd>
+                                Binary classification
+                            </dd>
+                            <dt>
+                                Label budgets
+                            </dt>
+                            <dd>
+                                4, 6, 10 or 20 in total
+                            </dd>
+                            <dt>
+                                Evaluation
+                            </dt>
+                            <dd>
+                                AUROC and Average Precision
+                            </dd>
+                        </dl>
+                    </aside>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy details-group">
+                        <details id="protocol">
+                            <summary>
+                                Experimental protocol and model parameters
+                            </summary>
+                            <div class="detail-content">
+                                <dl class="protocol">
+                                    <dt>
+                                        Data split
+                                    </dt>
+                                    <dd>
+                                        Ten stratified random 75/25 splits, seeds 1000–1009. Each contains 426 training and 143 test cases; each test set has 90 benign and 53 malignant cases. No case identifier is used as an input.
+                                    </dd>
+                                    <dt>
+                                        Label selection
+                                    </dt>
+                                    <dd>
+                                        50 balanced draws per label budget and split, with no duplicate cases within a draw. Paired across models, not nested across label budgets.
+                                    </dd>
+                                    <dt>
+                                        Direct logistic regression
+                                    </dt>
+                                    <dd>
+                                        <code>
+                                            StandardScaler
+                                        </code>
+                                        on all unlabelled training cases. 30 continuous features.
+                                    </dd>
+                                    <dt>
+                                        Discretisation
+                                    </dt>
+                                    <dd>
+                                        <code>
+                                            KBinsDiscretizer(n_bins=5, strategy='quantile')
+                                        </code>
+                                        , one-hot encoding; fitted exclusively on the training pool.
+                                    </dd>
+                                    <dt>
+                                        SVD
+                                    </dt>
+                                    <dd>
+                                        32 components on the binary input; subsequently standardised using the training pool.
+                                    </dd>
+                                    <dt>
+                                        RBM
+                                    </dt>
+                                    <dd>
+                                        32 hidden units, learning rate 0.05, batch size 32, 50 epochs, seeds 2000–2009. Persistent Contrastive Divergence in scikit-learn.
+                                        <sup>
+                                            <a aria-label="Source 2" href="#quelle-2">
+                                                2
+                                            </a>
+                                        </sup>
+                                    </dd>
+                                    <dt>
+                                        Autoencoder
+                                    </dt>
+                                    <dd>
+                                        Sigmoid encoder with 32 dimensions and a sigmoid decoder. Binary cross-entropy, Adam, learning rate 0.01, weight decay 10
+                                        <sup>
+                                            −5
+                                        </sup>
+                                        , 250 full-batch epochs. One fixed configuration; no comprehensive architecture comparison.
+                                    </dd>
+                                    <dt>
+                                        Classifier
+                                    </dt>
+                                    <dd>
+                                        All variants use
+                                        <code>
+                                            LogisticRegression(C=0.1, solver='liblinear', max_iter=1000)
+                                        </code>
+                                        . RBM and autoencoder activations receive no further standardisation. The same C value does not imply the same effective regularisation when feature scales differ.
+                                    </dd>
+                                    <dt>
+                                        Evaluation
+                                    </dt>
+                                    <dd>
+                                        10,000 stored model runs: five models × four label budgets × ten splits × 50 draws. Average Precision was calculated with
+                                        <code>
+                                            average_precision_score
+                                        </code>
+                                        ; the historical export column is named
+                                        <code>
+                                            auprc
+                                        </code>
+                                        .
+                                        <sup>
+                                            <a aria-label="Source 3" href="#quelle-3">
+                                                3
+                                            </a>
+                                        </sup>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </section>
+            <section aria-labelledby="discussion-heading" class="section interpretation content-card" id="einordnung">
+                <div class="card-heading">
+       <span class="section-number">
+        03
+       </span>
+                    <h2 id="discussion-heading">
+                        Interpretation and limitations
+                    </h2>
+                    <span aria-hidden="true" class="section-icon">
+        <svg viewbox="0 0 24 24">
+         <path d="M12 3v18M5 21h14M4 7h16M6 7l-3 7h6L6 7M18 7l-3 7h6l-3-7">
+         </path>
+        </svg>
+       </span>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy prose">
+                        <p>
+                            The result is consistent with a benefit from unsupervised pretraining under extreme label scarcity. The effect size is limited, however. From five labels per class onward, direct logistic regression already has a higher mean AUROC than the RBM. The study therefore does not establish a general RBM advantage or superiority over autoencoders.
+                        </p>
+                        <p>
+                            Label scarcity is simulated. To draw a balanced labelled set, candidate class identities must already be known. Four released labels therefore do not automatically correspond to the practical effort of diagnosing four arbitrary cases. No actual reduction in annotation time was measured.
+                        </p>
+                        <p>
+                            WDBC is a small, historical sample. Repeated splits of the same cases are not a substitute for external validation. Discretisation, scaling and fixed regularisation also affect the model comparison. Transfer to other laboratories, specimens or tumour types was not studied.
+                        </p>
+                        <p>
+                            The dataset was selected as a positive example after several exploratory dataset and task trials. This selection increases the risk of optimistic findings.
+                        </p>
+                        <p>
+                            The basic idea is not new either: RBM-based methods for learning from few labels in breast-imaging diagnosis have been studied previously. The purpose of this small project is a transparent comparison on tabular data, including the conditions under which the observed advantage disappears.
+                            <sup>
+                                <a aria-label="Source 4" href="#quelle-4">
+                                    4
+                                </a>
+                            </sup>
+                        </p>
+                    </div>
+                    <aside class="sidenote">
+        <span class="note-label">
+         Conclusion
+        </span>
+                        <p>
+                            A small niche for an older model: with two to three labels per class, a mean advantage is visible. More labelled examples reduce the difference and eventually reverse it.
+                        </p>
+                    </aside>
+                </div>
+            </section>
+            <section aria-labelledby="material-heading" class="material content-card" id="material">
+                <div class="card-heading">
+       <span class="section-number">
+        04
+       </span>
+                    <h2 id="material-heading">
+                        Sources
+                    </h2>
+                    <span aria-hidden="true" class="section-icon">
+        <svg viewbox="0 0 24 24">
+         <path d="M12 5v16M3 4h5a4 4 0 0 1 4 3 4 4 0 0 1 4-3h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3z">
+         </path>
+        </svg>
+       </span>
+                </div>
+                <div class="article-grid">
+                    <div class="body-copy">
+                        <div class="sources">
+                            <h3>
+                                References
+                            </h3>
+                            <ol>
+                                <li id="quelle-1">
+                                    Wolberg W., Mangasarian O., Street N., Street W.
+                                    <a href="https://doi.org/10.24432/C5DW2B">
+                                        Breast Cancer Wisconsin (Diagnostic)
+                                    </a>
+                                    . UCI Machine Learning Repository, 1993.
+                                </li>
+                                <li id="quelle-2">
+                                    scikit-learn.
+                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.BernoulliRBM.html">
+                                        BernoulliRBM
+                                    </a>
+                                    .
+                                </li>
+                                <li id="quelle-3">
+                                    scikit-learn.
+                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">
+                                        Average Precision
+                                    </a>
+                                    .
+                                </li>
+                                <li id="quelle-4">
+                                    Cao et al.
+                                    <a href="https://doi.org/10.3233/BME-151453">
+                                        RBM-based oversampling and semi-supervised learning for breast CAD
+                                    </a>
+                                    , 2015.
+                                </li>
+                            </ol>
+                        </div>
+                        <p class="license">
+                            The WDBC dataset is provided under
+                            <a href="https://creativecommons.org/licenses/by/4.0/">
+                                CC BY 4.0
+                            </a>
+                            .
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </article>
+    </main>
+    <div class="back-row">
+        <a href="https://schmeidler.at/index.html#projects">
+            <svg aria-hidden="true" class="arrow-icon arrow-left" focusable="false" viewbox="0 0 20 20">
+                <path d="M15 10H5M9 6l-4 4 4 4">
+                </path>
+            </svg>
+            Back
+        </a>
+    </div>
+</div>
+<script id="results-data" type="application/json">{"summary":[{"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.895316142557652,"auroc_sd":0.07221763163069914,"auprc":0.8540118634983075,"auprc_sd":0.09770095580541865},{"labels_per_class":2,"model":"Binned logistic","auroc":0.9106071278825996,"auroc_sd":0.06705196640450396,"auprc":0.8772852098592564,"auprc_sd":0.09065553778782633},{"labels_per_class":2,"model":"Continuous logistic","auroc":0.9582289308176101,"auroc_sd":0.04397719781511328,"auprc":0.939186795499807,"auprc_sd":0.05827351758196072},{"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9691094339622641,"auroc_sd":0.06052946706750068,"auprc":0.9615878459741063,"auprc_sd":0.04870077096493094},{"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.773279245283019,"auroc_sd":0.0830690209377975,"auprc":0.6964749923666594,"auprc_sd":0.1103436522196165},{"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9276410901467506,"auroc_sd":0.04537279673919056,"auprc":0.8982201337377723,"auprc_sd":0.06668798167559188},{"labels_per_class":3,"model":"Binned logistic","auroc":0.9385513626834381,"auroc_sd":0.040406292103362725,"auprc":0.9145157081465224,"auprc_sd":0.05915559853201478},{"labels_per_class":3,"model":"Continuous logistic","auroc":0.9672809224318658,"auroc_sd":0.024595103741617674,"auprc":0.9512338448607944,"auprc_sd":0.03820375662247684},{"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9729379454926625,"auroc_sd":0.010096967692633345,"auprc":0.9646412445163145,"auprc_sd":0.012267627939113809},{"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8185744234800838,"auroc_sd":0.06744699438367367,"auprc":0.7539041023312005,"auprc_sd":0.09739965324775902},{"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.951767714884696,"auroc_sd":0.027227727584808924,"auprc":0.9321304808494022,"auprc_sd":0.040886596162857905},{"labels_per_class":5,"model":"Binned logistic","auroc":0.9597857442348009,"auroc_sd":0.02256769790346584,"auprc":0.9450528927898262,"auprc_sd":0.032212246986779575},{"labels_per_class":5,"model":"Continuous logistic","auroc":0.975841928721174,"auroc_sd":0.01313781740580067,"auprc":0.9646828065561694,"auprc_sd":0.022189006084442995},{"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9729262054507337,"auroc_sd":0.010072030722898466,"auprc":0.9646301240943,"auprc_sd":0.012235261611581177},{"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8725186582809225,"auroc_sd":0.04942200459421835,"auprc":0.8272101127237204,"auprc_sd":0.07250312172344461},{"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9667199161425576,"auroc_sd":0.017485834008247582,"auprc":0.9546431641367871,"auprc_sd":0.023828236233085984},{"labels_per_class":10,"model":"Binned logistic","auroc":0.9720779874213836,"auroc_sd":0.014266284053356256,"auprc":0.9625921263097047,"auprc_sd":0.018706632878959392},{"labels_per_class":10,"model":"Continuous logistic","auroc":0.9807459119496855,"auroc_sd":0.011441737176932518,"auprc":0.9729915677495419,"auprc_sd":0.01833647585183838},{"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9728922431865829,"auroc_sd":0.0100890723214173,"auprc":0.9645828251856063,"auprc_sd":0.012237027239346918},{"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9282561844863731,"auroc_sd":0.03126062720832665,"auprc":0.9035185460627522,"auprc_sd":0.04348231115012537}],"split_means":[{"outer_split":0,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8920167714884696,"auprc":0.8604446463715469},{"outer_split":0,"labels_per_class":2,"model":"Binned logistic","auroc":0.9189496855345912,"auprc":0.8940138138918913},{"outer_split":0,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9618406708595388,"auprc":0.9279341005885656},{"outer_split":0,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9852285115303983,"auprc":0.9787879498933281},{"outer_split":0,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7830733752620546,"auprc":0.7146200194256371},{"outer_split":0,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9345199161425576,"auprc":0.9080154606423889},{"outer_split":0,"labels_per_class":3,"model":"Binned logistic","auroc":0.9544109014675053,"auprc":0.9322932428920916},{"outer_split":0,"labels_per_class":3,"model":"Continuous logistic","auroc":0.97146750524109,"auprc":0.9407888999719334},{"outer_split":0,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9851949685534591,"auprc":0.9787279344224994},{"outer_split":0,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8324528301886792,"auprc":0.7641121785006219},{"outer_split":0,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9645283018867924,"auprc":0.9470892318386607},{"outer_split":0,"labels_per_class":5,"model":"Binned logistic","auroc":0.9767589098532494,"auprc":0.965027857810698},{"outer_split":0,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9832704402515724,"auprc":0.9660900677320184},{"outer_split":0,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.985132075471698,"auprc":0.9786461113519516},{"outer_split":0,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8861132075471698,"auprc":0.8451072867095902},{"outer_split":0,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9746079664570231,"auprc":0.9641248066056538},{"outer_split":0,"labels_per_class":10,"model":"Binned logistic","auroc":0.984230607966457,"auprc":0.9767528212762874},{"outer_split":0,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9865702306079664,"auprc":0.9756752188712552},{"outer_split":0,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9850985324947588,"auprc":0.9786109979640735},{"outer_split":0,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.937496855345912,"auprc":0.9138047983693178},{"outer_split":1,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8852285115303984,"auprc":0.8444970910827991},{"outer_split":1,"labels_per_class":2,"model":"Binned logistic","auroc":0.9121740041928722,"auprc":0.8790474523634768},{"outer_split":1,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9570901467505242,"auprc":0.9439535610102568},{"outer_split":1,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9606666666666667,"auprc":0.9496893708038999},{"outer_split":1,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7861970649895178,"auprc":0.7064115412364781},{"outer_split":1,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.916670859538784,"auprc":0.8909532907732399},{"outer_split":1,"labels_per_class":3,"model":"Binned logistic","auroc":0.934125786163522,"auprc":0.9139255117177588},{"outer_split":1,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9611572327044026,"auprc":0.9504161802963031},{"outer_split":1,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9607127882599581,"auprc":0.9497308009939371},{"outer_split":1,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8235471698113207,"auprc":0.7603150306890744},{"outer_split":1,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9330314465408804,"auprc":0.9160512340854419},{"outer_split":1,"labels_per_class":5,"model":"Binned logistic","auroc":0.9471740041928721,"auprc":0.92994924800895},{"outer_split":1,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9712704402515723,"auprc":0.9639582763588642},{"outer_split":1,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.96062893081761,"auprc":0.9496536183325106},{"outer_split":1,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.861601677148847,"auprc":0.8171355957692847},{"outer_split":1,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9457861635220125,"auprc":0.9310720377713751},{"outer_split":1,"labels_per_class":10,"model":"Binned logistic","auroc":0.9590943396226415,"auprc":0.944315282479691},{"outer_split":1,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9741425576519915,"auprc":0.9687552848308704},{"outer_split":1,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9606624737945492,"auprc":0.9496910664892322},{"outer_split":1,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9087924528301886,"auprc":0.8776262724495529},{"outer_split":2,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8691069182389937,"auprc":0.8226213253079705},{"outer_split":2,"labels_per_class":2,"model":"Binned logistic","auroc":0.889607966457023,"auprc":0.8533253412128384},{"outer_split":2,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9474800838574424,"auprc":0.929752050833877},{"outer_split":2,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9535555555555555,"auprc":0.9418419561269421},{"outer_split":2,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7496771488469602,"auprc":0.6736973236114916},{"outer_split":2,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.896607966457023,"auprc":0.8622782062377589},{"outer_split":2,"labels_per_class":3,"model":"Binned logistic","auroc":0.9190272536687631,"auprc":0.8929530330240122},{"outer_split":2,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9514507337526206,"auprc":0.9320220334781721},{"outer_split":2,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9533752620545073,"auprc":0.9417074407180922},{"outer_split":2,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.80137106918239,"auprc":0.7421061324746936},{"outer_split":2,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9333291404612161,"auprc":0.9111149039074787},{"outer_split":2,"labels_per_class":5,"model":"Binned logistic","auroc":0.9444067085953879,"auprc":0.9279935664731168},{"outer_split":2,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9670440251572328,"auprc":0.955482062960932},{"outer_split":2,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9535010482180294,"auprc":0.9418036542627237},{"outer_split":2,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8580125786163522,"auprc":0.8143181210752358},{"outer_split":2,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9391111111111111,"auprc":0.9223935851119363},{"outer_split":2,"labels_per_class":10,"model":"Binned logistic","auroc":0.9522683438155135,"auprc":0.9392796156374488},{"outer_split":2,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9711027253668764,"auprc":0.9610433844737579},{"outer_split":2,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9534842767295598,"auprc":0.9417785425023828},{"outer_split":2,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.905958071278826,"auprc":0.8817360967951955},{"outer_split":3,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8816352201257861,"auprc":0.8360960787113636},{"outer_split":3,"labels_per_class":2,"model":"Binned logistic","auroc":0.8938427672955974,"auprc":0.8625554188950021},{"outer_split":3,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9378867924528302,"auprc":0.9039514473584441},{"outer_split":3,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9636016771488469,"auprc":0.9547893727745396},{"outer_split":3,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7688176100628931,"auprc":0.6953763997887511},{"outer_split":3,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9178406708595388,"auprc":0.8800822030558271},{"outer_split":3,"labels_per_class":3,"model":"Binned logistic","auroc":0.9209140461215932,"auprc":0.8888227591096235},{"outer_split":3,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9539077568134172,"auprc":0.9327358434897053},{"outer_split":3,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9636603773584906,"auprc":0.9548918479951811},{"outer_split":3,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.7970943396226415,"auprc":0.7265869474627016},{"outer_split":3,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9481090146750525,"auprc":0.9269083179905409},{"outer_split":3,"labels_per_class":5,"model":"Binned logistic","auroc":0.9502012578616352,"auprc":0.936230977552479},{"outer_split":3,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9649140461215933,"auprc":0.9477864193027112},{"outer_split":3,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.963517819706499,"auprc":0.9547260441012093},{"outer_split":3,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8626037735849057,"auprc":0.8104714815646067},{"outer_split":3,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9634297693920335,"auprc":0.949872012644109},{"outer_split":3,"labels_per_class":10,"model":"Binned logistic","auroc":0.9629140461215933,"auprc":0.9521284099997364},{"outer_split":3,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9677358490566037,"auprc":0.9543294756504548},{"outer_split":3,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9631991614255766,"auprc":0.954390359359314},{"outer_split":3,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9273459119496856,"auprc":0.8999482576276628},{"outer_split":4,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.9231949685534592,"auprc":0.886825383952132},{"outer_split":4,"labels_per_class":2,"model":"Binned logistic","auroc":0.9328825995807128,"auprc":0.9090218505227884},{"outer_split":4,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9680838574423479,"auprc":0.9550647749470822},{"outer_split":4,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9769392033542976,"auprc":0.9733467670214716},{"outer_split":4,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7884402515723271,"auprc":0.7146048784661261},{"outer_split":4,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9310020964360587,"auprc":0.9062330165985489},{"outer_split":4,"labels_per_class":3,"model":"Binned logistic","auroc":0.9398490566037735,"auprc":0.9225580881026635},{"outer_split":4,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9720251572327043,"auprc":0.9637714830314908},{"outer_split":4,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9769140461215933,"auprc":0.9733542707013484},{"outer_split":4,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8053165618448638,"auprc":0.7296440772688824},{"outer_split":4,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9598406708595388,"auprc":0.9453098019008486},{"outer_split":4,"labels_per_class":5,"model":"Binned logistic","auroc":0.9651320754716981,"auprc":0.956481442287273},{"outer_split":4,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9766834381551363,"auprc":0.969605850183381},{"outer_split":4,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9768721174004191,"auprc":0.9733850279303424},{"outer_split":4,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8834968553459119,"auprc":0.8381401947182959},{"outer_split":4,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9760083857442348,"auprc":0.9693106214188016},{"outer_split":4,"labels_per_class":10,"model":"Binned logistic","auroc":0.9791823899371068,"auprc":0.975902483730736},{"outer_split":4,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9840293501048218,"auprc":0.9810307410767679},{"outer_split":4,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9766624737945492,"auprc":0.9731874117011882},{"outer_split":4,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9427840670859539,"auprc":0.9254874468156303},{"outer_split":5,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.9107463312368974,"auprc":0.8694981635541891},{"outer_split":5,"labels_per_class":2,"model":"Binned logistic","auroc":0.9138448637316562,"auprc":0.8746640958285141},{"outer_split":5,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9676436058700211,"auprc":0.9480322729164088},{"outer_split":5,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9796519916142558,"auprc":0.9738141847369749},{"outer_split":5,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7722348008385744,"auprc":0.700120434395876},{"outer_split":5,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9461551362683438,"auprc":0.9171148196724617},{"outer_split":5,"labels_per_class":3,"model":"Binned logistic","auroc":0.9527756813417192,"auprc":0.9284048018739378},{"outer_split":5,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9733668763102724,"auprc":0.9518318319437324},{"outer_split":5,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9798658280922432,"auprc":0.974128478592057},{"outer_split":5,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8467589098532495,"auprc":0.784884997602857},{"outer_split":5,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9624654088050315,"auprc":0.9443319860083578},{"outer_split":5,"labels_per_class":5,"model":"Binned logistic","auroc":0.9679706498951782,"auprc":0.9539497393514693},{"outer_split":5,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9792955974842767,"auprc":0.9635776882856797},{"outer_split":5,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9798448637316562,"auprc":0.9741103888590702},{"outer_split":5,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8908008385744235,"auprc":0.8477360896473682},{"outer_split":5,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9731907756813417,"auprc":0.9606266295339236},{"outer_split":5,"labels_per_class":10,"model":"Binned logistic","auroc":0.9775639412997903,"auprc":0.9696331214571198},{"outer_split":5,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9846247379454927,"auprc":0.9744704415032595},{"outer_split":5,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9798406708595389,"auprc":0.9741066586158211},{"outer_split":5,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9447505241090147,"auprc":0.9210732635637048},{"outer_split":6,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8644696016771488,"auprc":0.8125310165086717},{"outer_split":6,"labels_per_class":2,"model":"Binned logistic","auroc":0.8849266247379455,"auprc":0.8407453239082985},{"outer_split":6,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9517945492662474,"auprc":0.9321696483857025},{"outer_split":6,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9541635220125787,"auprc":0.9456926400919433},{"outer_split":6,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7524779874213837,"auprc":0.6690838911369247},{"outer_split":6,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9283857442348008,"auprc":0.8993717438913079},{"outer_split":6,"labels_per_class":3,"model":"Binned logistic","auroc":0.9357987421383648,"auprc":0.909565115625261},{"outer_split":6,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9711572327044026,"auprc":0.9546550994567737},{"outer_split":6,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9730649895178196,"auprc":0.9606043745202654},{"outer_split":6,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.816440251572327,"auprc":0.7539507199123441},{"outer_split":6,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9506163522012578,"auprc":0.9246739238109288},{"outer_split":6,"labels_per_class":5,"model":"Binned logistic","auroc":0.9575765199161426,"auprc":0.9370781062270039},{"outer_split":6,"labels_per_class":5,"model":"Continuous logistic","auroc":0.980146750524109,"auprc":0.9688807644547623},{"outer_split":6,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9732033542976939,"auprc":0.9608724741774479},{"outer_split":6,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8603941299790356,"auprc":0.8034244776463456},{"outer_split":6,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9687169811320754,"auprc":0.9534504920608627},{"outer_split":6,"labels_per_class":10,"model":"Binned logistic","auroc":0.9745870020964361,"auprc":0.96266384612873},{"outer_split":6,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9872285115303983,"auprc":0.9793861012616263},{"outer_split":6,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9732830188679245,"auprc":0.9609911006162661},{"outer_split":6,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.924691823899371,"auprc":0.893523902065888},{"outer_split":7,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.9130314465408804,"auprc":0.8775513726897956},{"outer_split":7,"labels_per_class":2,"model":"Binned logistic","auroc":0.9205828092243187,"auprc":0.8869840268184381},{"outer_split":7,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9630314465408805,"auprc":0.9482335592096318},{"outer_split":7,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9721551362683438,"auprc":0.962208757103624},{"outer_split":7,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.7809475890985326,"auprc":0.7049507465175248},{"outer_split":7,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9296771488469602,"auprc":0.9054091030021296},{"outer_split":7,"labels_per_class":3,"model":"Binned logistic","auroc":0.9329475890985326,"auprc":0.9066414133246857},{"outer_split":7,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9676729559748428,"auprc":0.9544342557025571},{"outer_split":7,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.97220964360587,"auprc":0.9622100761862307},{"outer_split":7,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8056058700209644,"auprc":0.7474560671810234},{"outer_split":7,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9505115303983228,"auprc":0.9305691185495406},{"outer_split":7,"labels_per_class":5,"model":"Binned logistic","auroc":0.9570524109014675,"auprc":0.9392051272633463},{"outer_split":7,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9729350104821803,"auprc":0.9623863810154922},{"outer_split":7,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.9722683438155135,"auprc":0.9622137720506337},{"outer_split":7,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8680628930817611,"auprc":0.8248030668288119},{"outer_split":7,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.968335429769392,"auprc":0.9567289014992028},{"outer_split":7,"labels_per_class":10,"model":"Binned logistic","auroc":0.9699496855345912,"auprc":0.9590335551946721},{"outer_split":7,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9756981132075473,"auprc":0.967147607843523},{"outer_split":7,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9724067085953878,"auprc":0.9622835736211272},{"outer_split":7,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.9229098532494758,"auprc":0.8956480137898626},{"outer_split":8,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.9157023060796645,"auprc":0.8791146845414534},{"outer_split":8,"labels_per_class":2,"model":"Binned logistic","auroc":0.921041928721174,"auprc":0.88976930805662},{"outer_split":8,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9691698113207547,"auprc":0.955687940555493},{"outer_split":8,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9653333333333333,"auprc":0.9641609055964387},{"outer_split":8,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.8036184486373166,"auprc":0.724289661110507},{"outer_split":8,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9425199161425576,"auprc":0.9076134684058853},{"outer_split":8,"labels_per_class":3,"model":"Binned logistic","auroc":0.9499412997903564,"auprc":0.9244643330547346},{"outer_split":8,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9772955974842767,"auprc":0.965693232928343},{"outer_split":8,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9846205450733753,"auprc":0.979557195841722},{"outer_split":8,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8561719077568134,"auprc":0.7927221514220812},{"outer_split":8,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9694297693920335,"auprc":0.9547943449164112},{"outer_split":8,"labels_per_class":5,"model":"Binned logistic","auroc":0.9734926624737946,"auprc":0.9636292580614814},{"outer_split":8,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9848553459119497,"auprc":0.976267215237259},{"outer_split":8,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.984566037735849,"auprc":0.9794854684206074},{"outer_split":8,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.9096394129979035,"auprc":0.8777959959061854},{"outer_split":8,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.983056603773585,"auprc":0.9760865394672804},{"outer_split":8,"labels_per_class":10,"model":"Binned logistic","auroc":0.9835429769392033,"auprc":0.9777067562683704},{"outer_split":8,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9908763102725366,"auprc":0.9852660552333513},{"outer_split":8,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9846121593291405,"auprc":0.9795493254589002},{"outer_split":8,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.94916142557652,"auprc":0.9359586693939083},{"outer_split":9,"labels_per_class":2,"model":"Autoencoder-32 + logistic","auroc":0.8980293501048219,"auprc":0.8509388722631523},{"outer_split":9,"labels_per_class":2,"model":"Binned logistic","auroc":0.9182180293501048,"auprc":0.8827254670946965},{"outer_split":9,"labels_per_class":2,"model":"Continuous logistic","auroc":0.9582683438155136,"auprc":0.9470885991926075},{"outer_split":9,"labels_per_class":2,"model":"RBM-32 + logistic","auroc":0.9797987421383648,"auprc":0.9715465555919005},{"outer_split":9,"labels_per_class":2,"model":"SVD-32 + logistic","auroc":0.747308176100629,"auprc":0.6615950279772776},{"outer_split":9,"labels_per_class":3,"model":"Autoencoder-32 + logistic","auroc":0.9330314465408805,"auprc":0.905130025098175},{"outer_split":9,"labels_per_class":3,"model":"Binned logistic","auroc":0.9457232704402516,"auprc":0.9255287827404544},{"outer_split":9,"labels_per_class":3,"model":"Continuous logistic","auroc":0.9733081761006289,"auprc":0.9659895883089332},{"outer_split":9,"labels_per_class":3,"model":"RBM-32 + logistic","auroc":0.9797610062893082,"auprc":0.971500025191812},{"outer_split":9,"labels_per_class":3,"model":"SVD-32 + logistic","auroc":0.8009853249475891,"auprc":0.7372627207977266},{"outer_split":9,"labels_per_class":5,"model":"Autoencoder-32 + logistic","auroc":0.9458155136268345,"auprc":0.9204619454858124},{"outer_split":9,"labels_per_class":5,"model":"Binned logistic","auroc":0.9580922431865828,"auprc":0.9409836048624436},{"outer_split":9,"labels_per_class":5,"model":"Continuous logistic","auroc":0.9780041928721174,"auprc":0.9727933400305946},{"outer_split":9,"labels_per_class":5,"model":"RBM-32 + logistic","auroc":0.979727463312369,"auprc":0.9714046814565032},{"outer_split":9,"labels_per_class":5,"model":"SVD-32 + logistic","auroc":0.8444612159329141,"auprc":0.7931688173714788},{"outer_split":9,"labels_per_class":10,"model":"Autoencoder-32 + logistic","auroc":0.9749559748427673,"auprc":0.962766015254725},{"outer_split":9,"labels_per_class":10,"model":"Binned logistic","auroc":0.9774465408805031,"auprc":0.9685053709242551},{"outer_split":9,"labels_per_class":10,"model":"Continuous logistic","auroc":0.9854507337526205,"auprc":0.9828113667505528},{"outer_split":9,"labels_per_class":10,"model":"RBM-32 + logistic","auroc":0.9796729559748428,"auprc":0.9712392155277579},{"outer_split":9,"labels_per_class":10,"model":"SVD-32 + logistic","auroc":0.918670859538784,"auprc":0.8903787397567985}],"paired":[{"labels_per_class":2,"metric":"auroc","mean":0.010880503144654042,"sd":0.009797077745934232,"minimum":-0.0038364779874214827,"maximum":0.025714884696016682,"positive_splits":9,"values":[0.023387840670859417,0.0035765199161424954,0.006075471698113066,0.025714884696016682,0.008855345911949697,0.012008385744234684,0.0023689727463312993,0.009123689727463358,-0.0038364779874214827,0.021530398322851196]},{"labels_per_class":2,"metric":"auprc","mean":0.022401050474299335,"sd":0.0162573121674752,"minimum":0.005735809793643076,"maximum":0.050853849304762444,"positive_splits":10,"values":[0.050853849304762444,0.005735809793643076,0.012089905293065084,0.05083792541609544,0.018281992074389408,0.025781911820566106,0.013522991706240828,0.013975197893992153,0.008472965040945746,0.024457956399293046]},{"labels_per_class":3,"metric":"auroc","mean":0.005657023060796651,"sd":0.004124340373032659,"minimum":-0.0004444444444444695,"maximum":0.01372746331236907,"positive_splits":9,"values":[0.01372746331236907,-0.0004444444444444695,0.0019245283018867188,0.00975262054507342,0.004888888888888943,0.0064989517819707965,0.0019077568134170386,0.004536687631027214,0.007324947589098518,0.006452830188679259]},{"labels_per_class":3,"metric":"auprc","mean":0.013407399655520092,"sd":0.011226723996368171,"minimum":-0.0006853793023660071,"maximum":0.03793903445056601,"positive_splits":9,"values":[0.03793903445056601,-0.0006853793023660071,0.009685407239920063,0.022156004505475835,0.00958278766985754,0.022296646648324536,0.0059492750634916325,0.0077758204836735345,0.013863962913378991,0.0055104368828787775]},{"labels_per_class":5,"metric":"auroc","mean":-0.0029157232704402846,"sd":0.00546809441220011,"minimum":-0.013542976939203366,"maximum":0.0018616352201256126,"positive_splits":4,"values":[0.0018616352201256126,-0.010641509433962248,-0.013542976939203366,-0.0013962264150942927,0.0001886792452828745,0.0005492662473794985,-0.006943396226415155,-0.0006666666666668153,-0.0002893081761006222,0.0017232704402516674]},{"labels_per_class":5,"metric":"auprc","mean":-5.2682461869468786e-05,"sd":0.009423227650024553,"minimum":-0.014304658026353612,"maximum":0.012556043619933122,"positive_splits":5,"values":[0.012556043619933122,-0.014304658026353612,-0.013678408698208244,0.0069396247984980786,0.0037791777469614596,0.010532700573390508,-0.008008290277314423,-0.00017260896485848942,0.0032182531833483408,-0.0013886585740914281]},{"labels_per_class":10,"metric":"auroc","mean":-0.007853668763102728,"sd":0.005303659850066518,"minimum":-0.01761844863731654,"maximum":-0.0014716981132076867,"positive_splits":0,"values":[-0.0014716981132076867,-0.013480083857442371,-0.01761844863731654,-0.004536687631027103,-0.007366876310272663,-0.004784067085953803,-0.013945492662473802,-0.0032914046121594875,-0.006264150943396163,-0.0057777777777776596]},{"labels_per_class":10,"metric":"auprc","mean":-0.00840874256393559,"sd":0.008342743103253242,"minimum":-0.019264841971375124,"maximum":0.0029357790928182803,"positive_splits":2,"values":[0.0029357790928182803,-0.019064218341638184,-0.019264841971375124,6.0883708859260643e-05,-0.007843329375579744,-0.0003637828874383242,-0.01839500064536015,-0.0048640342223958966,-0.005716729774451146,-0.011572151222794869]}],"audit":{"run_rows":10000,"unique_model_fits":10000,"rows_per_model_and_label_budget":500,"outer_splits":10,"label_draws_per_split":50,"test_size":143,"train_size":426,"test_malignant":53,"maximum_difference_from_saved_summary":1.1102230246251565e-16,"recomputed_metrics":80,"original_source_sha256":{"repeats.csv":"40349a6c33b93df24c218b55918b9c3153cebc5417189663a508c60ad4e7df6a","autoencoder_repeats.csv":"de2ce83d0adb4e29c66a15ef4e3eeed4774e2ea2ed374cad94361c4f464fe264","analysis_rbm.py":"5076f509297707cc3cf40845469aba41ca0a95d8ad6059fa6062d2495f049eb3","analysis_autoencoder.py":"e39a2a8f6d647fa6a85e63791d1b98e2a4cbfe8afcdef4f99592e065bf6d5609"},"full_training_rerun":false,"scope":"Metric consistency and source-code review; no retraining in this website preparation."}}</script>
+<script>
+    'use strict';
+    (() => {
+        const resultsData = JSON.parse(document.getElementById('results-data').textContent);
+        const labelBudgets = [2, 3, 5, 10];
+        const models = [
+            {key: 'raw', name: 'Continuous logistic', label: 'Direct logistic regression', color: 'var(--chart-raw)', dash: '7 4'},
+            {key: 'binned', name: 'Binned logistic', label: 'Binned logistic regression', color: 'var(--chart-binned)', dash: '4 3'},
+            {key: 'svd', name: 'SVD-32 + logistic', label: 'SVD-32', color: 'var(--chart-svd)', dash: '2 4'},
+            {key: 'ae', name: 'Autoencoder-32 + logistic', label: 'Autoencoder-32', color: 'var(--chart-ae)', dash: '9 3 2 3'},
+            {key: 'rbm', name: 'RBM-32 + logistic', label: 'RBM-32', color: 'var(--chart-rbm)', dash: ''}
+        ];
+        const state = {metric: 'auroc', other: false, spread: false, full: false, budget: 2};
+        const formatNumber = (n, decimals = 4) => Number(n).toFixed(decimals);
+        const formatSignedNumber = n => (n >= 0 ? '+' : '\u2212') + formatNumber(Math.abs(n));
+        const metricName = () => state.metric === 'auroc' ? 'AUROC' : 'Average Precision';
+        const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+        const summaryRow = (model, budget) => resultsData.summary.find(r => r.model === model && r.labels_per_class === budget);
+        const standardDeviation = values => {
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            return Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1));
+        };
+        const modelPoints = model => labelBudgets.map(n => ({
+            n, value: summaryRow(model.name, n)[state.metric],
+            spread: standardDeviation(resultsData.split_means.filter(r => r.model === model.name && r.labels_per_class === n).map(r => r[state.metric]))
+        }));
+        const visibleModels = () => models.filter(m => state.other || m.key === 'raw' || m.key === 'rbm');
+
+        function renderLearning() {
+            const svg = document.getElementById('learning-chart');
+            const W = Math.max(248, Math.round(svg.getBoundingClientRect().width));
+            const H = W < 580 ? 285 : 310;
+            const margin = {left: W < 400 ? 40 : 46, right: 15, top: 30, bottom: 48};
+            const low = state.full ? 0 : (state.metric === 'auroc' ? 0.70 : 0.65);
+            const x = n => margin.left + (n - 2) / 8 * (W - margin.left - margin.right);
+            const y = n => margin.top + (1 - n) / (1 - low) * (H - margin.top - margin.bottom);
+            const ticks = state.full ? [0, .2, .4, .6, .8, 1] : (state.metric === 'auroc' ? [.7, .75, .8, .85, .9, .95, 1] : [.65, .7, .75, .8, .85, .9, .95, 1]);
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('data-metric', state.metric);
+            svg.setAttribute('data-model-count', String(visibleModels().length));
+            let html = `<title id="chart-title">${metricName()} by number of labelled cases per class</title><desc id="chart-desc">Means from the stored WDBC evaluation. On average, the RBM is ahead of direct logistic regression with two and three labels per class. With five and ten labels, it is no longer ahead. Exact values are given in Table 1. The y-axis starts at ${formatNumber(low, 2)}.</desc>`;
+            html += `<defs><clipPath id="chart-clip"><rect x="${margin.left - 6}" y="${margin.top - 5}" width="${W - margin.left - margin.right + 12}" height="${H - margin.top - margin.bottom + 10}"/></clipPath></defs>`;
+            html += `<text x="${margin.left}" y="13" fill="var(--muted)" font-size="11" font-family="Arial,sans-serif">${metricName()}</text>`;
+            for (const value of ticks) {
+                html += `<line x1="${margin.left}" x2="${W - margin.right}" y1="${y(value)}" y2="${y(value)}" stroke="var(--grid)" stroke-width="${value === low ? 1.1 : .65}"/>`;
+                html += `<text x="${margin.left - 9}" y="${y(value) + 4}" text-anchor="end" fill="var(--muted)" font-size="11" font-family="Arial,sans-serif">${formatNumber(value, 2)}</text>`;
+            }
+            for (const n of labelBudgets) {
+                html += `<line x1="${x(n)}" x2="${x(n)}" y1="${H - margin.bottom}" y2="${H - margin.bottom + 4}" stroke="var(--muted)"/><text x="${x(n)}" y="${H - margin.bottom + 21}" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="Arial,sans-serif">${n}</text>`;
+            }
+            html += `<text x="${(margin.left + W - margin.right) / 2}" y="${H - 5}" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="Arial,sans-serif">Labelled cases per class</text><g clip-path="url(#chart-clip)">`;
+            if (state.spread) {
+                for (const model of models.filter(m => m.key === 'raw' || m.key === 'rbm')) {
+                    const data = modelPoints(model);
+                    const up = data.map(p => `${x(p.n)},${y(Math.min(1, p.value + p.spread))}`).join(' ');
+                    const down = [...data].reverse().map(p => `${x(p.n)},${y(Math.max(0, p.value - p.spread))}`).join(' ');
+                    html += `<polygon data-band="${model.key}" modelPoints="${up} ${down}" fill="${model.color}" fill-opacity=".09"/>`;
+                }
+            }
+            for (const model of visibleModels()) {
+                const data = modelPoints(model);
+                html += `<polyline data-series="${model.key}" modelPoints="${data.map(p => `${x(p.n)},${y(p.value)}`).join(' ')}" fill="none" stroke="${model.color}" stroke-width="${model.key === 'rbm' ? 2.2 : 1.7}" stroke-dasharray="${model.dash}" stroke-linejoin="round"/>`;
+                for (const p of data) {
+                    const title = `<title>${escapeHtml(model.label)}; ${p.n} labels per class; ${metricName()} ${formatNumber(p.value)}</title>`;
+                    html += model.key === 'raw'
+                        ? `<rect x="${x(p.n) - 3.1}" y="${y(p.value) - 3.1}" width="6.2" height="6.2" fill="${model.color}" stroke="var(--bg)" stroke-width=".8">${title}</rect>`
+                        : `<circle cx="${x(p.n)}" cy="${y(p.value)}" r="${model.key === 'rbm' ? 3.7 : 3.1}" fill="${model.color}" stroke="var(--bg)" stroke-width=".8">${title}</circle>`;
+                }
+            }
+            svg.innerHTML = html + '</g>';
+            document.getElementById('legend').innerHTML = visibleModels().map(m => `<span class="legend-item"><svg class="legend-line" viewBox="0 0 26 8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="${m.color}" stroke-width="2" stroke-dasharray="${m.dash}"/></svg>${escapeHtml(m.label)}</span>`).join('');
+            document.getElementById('axis-note').textContent = state.full ? 'The y-axis shows the full scale from 0 to 1.' : `The y-axis shows a range from ${formatNumber(low, 2)} to 1.00.`;
+        }
+
+        function renderDifferences() {
+            const data = resultsData.paired.find(r => r.labels_per_class === state.budget && r.metric === state.metric);
+            const svg = document.getElementById('split-chart');
+            const W = Math.max(248, Math.round(svg.getBoundingClientRect().width)), H = 108;
+            const left = 36, right = 34, base = 53;
+            const low = state.metric === 'auroc' ? -.02 : -.025, high = state.metric === 'auroc' ? .03 : .06;
+            const x = v => left + (v - low) / (high - low) * (W - left - right);
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('data-budget', String(state.budget));
+            const ticks = state.metric === 'auroc' ? [-.02, 0, .03] : [-.025, 0, .06];
+            let html = `<title id="split-title">${metricName()}: RBM minus direct logistic regression at ${state.budget} labels per class</title><desc id="split-desc">Ten paired split means, of which ${data.positive_splits} are positive. Overall mean ${formatSignedNumber(data.mean)}. The splits are not independent.</desc>`;
+            html += `<line x1="${left}" x2="${W - right}" y1="${base}" y2="${base}" stroke="var(--grid)"/><line x1="${x(0)}" x2="${x(0)}" y1="14" y2="79" stroke="var(--muted)" stroke-dasharray="3 4"/>`;
+            data.values.forEach((value, index) => {
+                const yy = base + (index % 3 - 1) * 10;
+                html += `<circle data-split="${index}" cx="${x(value)}" cy="${yy}" r="4" fill="${value >= 0 ? 'var(--chart-rbm)' : 'var(--chart-raw)'}" stroke="var(--bg)" stroke-width="1"><title>Split ${index + 1}: ${formatSignedNumber(value)}</title></circle>`;
+            });
+            const center = x(data.mean);
+            html += `<path d="M ${center} 14 l 5 5 l -5 5 l -5 -5 Z" fill="var(--fg)"><title>Mean ${formatSignedNumber(data.mean)}</title></path>`;
+            for (const value of ticks) html += `<text x="${x(value)}" y="96" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="Arial,sans-serif">${value === 0 ? '0' : formatSignedNumber(value)}</text>`;
+            svg.innerHTML = html;
+            document.getElementById('difference-label').textContent = `${metricName()}: RBM minus direct logistic regression`;
+            document.getElementById('split-copy').textContent = `At ${state.budget} labels per class, the RBM is higher in ${data.positive_splits} of ten splits. Mean difference: ${formatSignedNumber(data.mean)}; range: ${formatSignedNumber(data.minimum)} to ${formatSignedNumber(data.maximum)}.`;
+        }
+
+        function update() {
+            const metricSwitch = document.querySelector('.metric-switch');
+            const isAP = state.metric === 'auprc';
+            metricSwitch.classList.toggle('is-ap', isAP);
+            document.querySelectorAll('button[data-metric]').forEach(button => {
+                button.setAttribute('aria-pressed', String(button.dataset.metric === state.metric));
+            });
+            renderLearning();
+            renderDifferences();
+        }
+        document.querySelectorAll('button[data-metric]').forEach(button => button.addEventListener('click', () => { state.metric = button.dataset.metric; update(); }));
+        for (const [id, property] of [['other-models', 'other'], ['show-spread', 'spread'], ['full-scale', 'full']]) {
+            document.getElementById(id).addEventListener('change', event => { state[property] = event.target.checked; renderLearning(); });
+        }
+        document.getElementById('budget').addEventListener('change', event => { state.budget = Number(event.target.value); renderDifferences(); });
+        let frame;
+        window.addEventListener('resize', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); });
+        window.addEventListener('beforeprint', () => { document.querySelectorAll('details').forEach(el => { el.dataset.printOpen = String(el.open); el.open = true; }); update(); });
+        window.addEventListener('afterprint', () => { document.querySelectorAll('details').forEach(el => { el.open = el.dataset.printOpen === 'true'; delete el.dataset.printOpen; }); update(); });
+        update();
+    })();
+</script>
+<script>
+    (() => {
+        'use strict';
+        const root = document.documentElement;
+        const themeButton = document.querySelector('.theme-toggle');
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        const menuButton = document.querySelector('.menu-toggle');
+        const navigation = document.getElementById('study-nav');
+        const mobile = window.matchMedia('(max-width: 950px)');
+
+        function applyTheme(theme, save = false) {
+            const dark = theme === 'dark';
+            root.dataset.theme = dark ? 'dark' : 'light';
+            themeButton.setAttribute('aria-pressed', String(dark));
+            themeButton.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+            themeButton.title = dark ? 'Zum Hellmodus wechseln' : 'Zum Dunkelmodus wechseln';
+            themeMeta.content = dark ? '#111111' : '#ffffff';
+            if (save) {
+                try { localStorage.setItem('site-theme', root.dataset.theme); } catch (_) {  }
+            }
+        }
+        applyTheme(root.dataset.theme);
+        themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true));
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'site-theme') applyTheme(event.newValue);
+        });
+
+        function setMenu(open, returnFocus = false) {
+            navigation.classList.toggle('open', open);
+            menuButton.setAttribute('aria-expanded', String(open));
+            menuButton.querySelector('.sr-only').textContent = open ? 'Close menu' : 'Open menu';
+            if (returnFocus) menuButton.focus();
+        }
+        menuButton.addEventListener('click', () => setMenu(menuButton.getAttribute('aria-expanded') !== 'true'));
+        navigation.addEventListener('click', (event) => {
+            if (event.target.closest('a')) setMenu(false);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && menuButton.getAttribute('aria-expanded') === 'true') setMenu(false, true);
+        });
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.site-header')) setMenu(false);
+        });
+        document.addEventListener('focusin', (event) => {
+            if (!event.target.closest('.site-header')) setMenu(false);
+        });
+        mobile.addEventListener('change', (event) => { if (!event.matches) setMenu(false); });
+    })();
+</script>
+<script>
+    (() => {
+        'use strict';
+        const selector = document.querySelector('.language-switch');
+        if (!selector) return;
+        const links = Array.from(selector.querySelectorAll('a.lang-link'));
+        const currentLanguage = document.documentElement.lang.toLowerCase().startsWith('de') ? 'de' : 'en';
+        let pending = null;
+        const languageOf = link => ((link.getAttribute('hreflang') || link.getAttribute('lang') || '').toLowerCase().startsWith('de') ? 'de' : 'en');
+        function showLanguage(language) {
+            selector.classList.toggle('lang-de', language === 'de');
+            selector.classList.toggle('lang-en', language !== 'de');
+            links.forEach(link => {
+                const active = languageOf(link) === language;
+                link.classList.toggle('active', active);
+                if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+            });
+        }
+        const ms = value => { const t=value.trim(), n=Number.parseFloat(t); return Number.isFinite(n) ? (t.endsWith('ms') ? n : n*1000) : 0; };
+        function duration() {
+            const style = getComputedStyle(selector, '::before');
+            const props = style.transitionProperty.split(',').map(s=>s.trim());
+            const durs = style.transitionDuration.split(',').map(ms);
+            const delays = style.transitionDelay.split(',').map(ms);
+            return props.reduce((longest, prop, i) => (prop === 'transform' || prop === 'all') ? Math.max(longest, durs[i%durs.length]+delays[i%delays.length]) : longest, 0);
+        }
+        function clearPending() {
+            if (!pending) return;
+            clearTimeout(pending.timer);
+            if (pending.frame) cancelAnimationFrame(pending.frame);
+            selector.removeEventListener('transitionend', pending.onEnd);
+            pending = null;
+            selector.removeAttribute('aria-busy');
+        }
+        window.addEventListener('pageshow', () => { clearPending(); showLanguage(currentLanguage); });
+        showLanguage(currentLanguage);
+        selector.addEventListener('click', event => {
+            const link = event.target.closest('a.lang-link');
+            if (!link || !selector.contains(link)) return;
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+            const language = languageOf(link);
+            if (pending || language === currentLanguage) { event.preventDefault(); return; }
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin !== window.location.origin) return;
+            const wait = duration();
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || wait <= 0) return;
+            event.preventDefault();
+            getComputedStyle(selector, '::before').transform;
+            const task = {timer:0, frame:0, onEnd:null, finishing:false};
+            pending = task;
+            selector.setAttribute('aria-busy','true');
+            const navigate = () => {
+                if (pending !== task || task.finishing) return;
+                task.finishing = true;
+                clearTimeout(task.timer);
+                selector.removeEventListener('transitionend', task.onEnd);
+                task.frame = requestAnimationFrame(() => { if (pending === task) window.location.assign(destination.href); });
+            };
+            task.onEnd = transition => { if (transition.target === selector && transition.propertyName === 'transform' && (!transition.pseudoElement || transition.pseudoElement === '::before')) navigate(); };
+            selector.addEventListener('transitionend', task.onEnd);
+            task.timer = window.setTimeout(navigate, wait + 100);
+            showLanguage(language);
+        });
+    })();
+</script>
+<script>
+    const abstractGrid = document.querySelector('.abstract-grid');
+    if (abstractGrid) {
+        const shapeSequence = [
+            'square','square','circle','square','bar','diamond','square','square',
+            'square','pill','square','circle','square','triangle','square','bar',
+            'diamond','square','square','square','circle','square','pill','square',
+            'square','bar','square','diamond','square','circle','square','square',
+            'triangle','square','square','pill','square','bar','circle','square',
+            'square','diamond','square','square','bar','square','circle','square'
+        ];
+        const fragment = document.createDocumentFragment();
+        shapeSequence.forEach((shape, index) => {
+            const cell = document.createElement('span');
+            cell.className = `abstract-cell shape-${shape}`;
+            const duration = 3.35 + ((index * 17) % 19) / 10;
+            const delay = -(((index * 37) % 53) / 10);
+            const dx = ((index * 11) % 9) - 4;
+            const dy = ((index * 7) % 9) - 4;
+            const scale = 0.64 + ((index * 13) % 23) / 100;
+            cell.style.setProperty('--dur', `${duration.toFixed(2)}s`);
+            cell.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+            cell.style.setProperty('--dx', `${dx}px`);
+            cell.style.setProperty('--dy', `${dy}px`);
+            cell.style.setProperty('--shape-scale', scale.toFixed(2));
+            fragment.appendChild(cell);
+        });
+        abstractGrid.replaceChildren(fragment);
+    }
+</script>
+</body>
+</html>
