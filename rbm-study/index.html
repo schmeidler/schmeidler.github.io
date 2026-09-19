@@ -2922,12 +2922,12 @@
                     const data = modelPoints(model);
                     const up = data.map(p => `${x(p.n)},${y(Math.min(1, p.value + p.spread))}`).join(' ');
                     const down = [...data].reverse().map(p => `${x(p.n)},${y(Math.max(0, p.value - p.spread))}`).join(' ');
-                    html += `<polygon data-band="${model.key}" modelPoints="${up} ${down}" fill="${model.color}" fill-opacity=".09"/>`;
+                    html += `<polygon data-band="${model.key}" points="${up} ${down}" fill="${model.color}" fill-opacity=".09"/>`;
                 }
             }
             for (const model of visibleModels()) {
                 const data = modelPoints(model);
-                html += `<polyline data-series="${model.key}" modelPoints="${data.map(p => `${x(p.n)},${y(p.value)}`).join(' ')}" fill="none" stroke="${model.color}" stroke-width="${model.key === 'rbm' ? 2.2 : 1.7}" stroke-dasharray="${model.dash}" stroke-linejoin="round"/>`;
+                html += `<polyline data-series="${model.key}" points="${data.map(p => `${x(p.n)},${y(p.value)}`).join(' ')}" fill="none" stroke="${model.color}" stroke-width="${model.key === 'rbm' ? 2.2 : 1.7}" stroke-dasharray="${model.dash}" stroke-linejoin="round"/>`;
                 for (const p of data) {
                     const title = `<title>${escapeHtml(model.label)}; ${p.n} labels per class; ${metricName()} ${formatNumber(p.value)}</title>`;
                     html += model.key === 'raw'
