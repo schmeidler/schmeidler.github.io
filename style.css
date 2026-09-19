@@ -314,6 +314,7 @@ button, input, textarea {
   margin-top: auto;
   padding-top: 34px;
   font-weight: 500;
+  border-bottom: 1px solid var(--page-line);
 }
 
 .contact-footer {
