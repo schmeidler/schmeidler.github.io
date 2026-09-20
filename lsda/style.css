@@ -1038,3 +1038,7 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
 .edge-inspector-section{
   padding-top:18px;
 }
+
+.edge-similarity{
+  margin-bottom:20px !important;
+}
