@@ -1055,3 +1055,12 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   position:sticky !important;
   top:0;
 }
+
+dialog:focus,
+dialog:focus-visible{
+  outline:none !important;
+}
+
+.method-section + .method-section{
+  margin-top:32px;
+}
