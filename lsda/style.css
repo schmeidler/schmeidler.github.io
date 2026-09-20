@@ -649,51 +649,46 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   stroke-linejoin:round;
 }
 
-/* FINAL: toolbar typography matched to the main site */
-@media (min-width: 951px) {
-  .site-header .nav,
-  .site-header .nav a,
-  .site-header .nav .nav-control {
-    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
-    font-size: .86rem !important;
-    font-weight: 500 !important;
-    line-height: 1 !important;
-    letter-spacing: normal !important;
-    font-style: normal !important;
-    font-variant: normal !important;
-    font-stretch: normal !important;
-    text-transform: none !important;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* FINAL toolbar typography: inherit exactly like the main site */
+.site-header .nav{
+  font-family:inherit!important;
+  font-size:.92rem!important;
+  font-weight:500!important;
+  font-style:normal!important;
+  font-variant:normal!important;
+  font-stretch:normal!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+}
+
+.site-header .nav a,
+.site-header .nav .nav-control{
+  font:inherit!important;
+  line-height:1!important;
+  letter-spacing:normal!important;
+  font-style:normal!important;
+  font-variant:normal!important;
+  font-stretch:normal!important;
+  text-transform:none!important;
+  -webkit-font-smoothing:inherit!important;
+  -moz-osx-font-smoothing:inherit!important;
+}
+
+@media(min-width:951px){
+  .site-header .nav{
+    gap:7px!important;
   }
 
-  .site-header .nav .nav-control {
-    appearance: none;
-    -webkit-appearance: none;
-    margin: 0;
+  .site-header .nav a,
+  .site-header .nav .nav-control{
+    padding:8px 12px!important;
+    font-size:.86rem!important;
   }
 }
 
-@media (max-width: 950px) {
-  .site-header .nav,
+@media(max-width:950px){
   .site-header .nav a,
-  .site-header .nav .nav-control {
-    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
-    font-size: .92rem !important;
-    font-weight: 500 !important;
-    line-height: 1 !important;
-    letter-spacing: normal !important;
-    font-style: normal !important;
-    font-variant: normal !important;
-    font-stretch: normal !important;
-    text-transform: none !important;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  .site-header .nav .nav-control {
-    appearance: none;
-    -webkit-appearance: none;
-    margin: 0;
+  .site-header .nav .nav-control{
+    font-size:.92rem!important;
   }
 }
