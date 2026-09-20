@@ -10,7 +10,7 @@
     <meta content="Restricted Boltzmann Machines bei extremer Labelknappheit. Eine Fallstudie mit tabellarischen Tumormorphologiedaten." property="og:description"/>
     <meta content="article" property="og:type"/>
     <title>
-        do machines dream of unseen labels?
+        do machines dream of unseen labels? — Eine Methodenstudie
     </title>
     <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1' y='1' width='62' height='62' rx='16' fill='white' stroke='black' stroke-width='2'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia,serif' font-size='48' fill='black'%3E%3F%3C/text%3E%3C/svg%3E" rel="icon"/>
     <script>
@@ -1939,6 +1939,18 @@
             flex: 0 0 auto;
         }
 
+        .site-header,
+        .site-header a,
+        .site-header button {
+            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+            font-style: normal !important;
+            font-variant: normal !important;
+            font-stretch: normal !important;
+            letter-spacing: normal;
+            text-rendering: auto;
+            -webkit-font-smoothing: auto;
+        }
+
         .site-nav {
             display: flex;
             flex-wrap: wrap;
@@ -1946,10 +1958,11 @@
             justify-content: flex-end;
             gap: 7px;
             margin-left: auto;
-            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
-            font-size: .92rem;
-            font-weight: 500;
-            line-height: 1;
+            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+            font-size: .92rem !important;
+            font-weight: 500 !important;
+            line-height: 1 !important;
+            letter-spacing: normal !important;
         }
 
         .site-nav a {
@@ -1959,10 +1972,15 @@
             border-radius: 999px;
             background: transparent;
             color: var(--fg);
-            font-family: inherit;
-            font-size: inherit;
-            font-weight: inherit;
-            line-height: 1;
+            font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+            font-size: inherit !important;
+            font-weight: 500 !important;
+            font-style: normal !important;
+            font-variant: normal !important;
+            font-stretch: normal !important;
+            line-height: 1 !important;
+            letter-spacing: normal !important;
+            text-transform: none !important;
             text-decoration: none;
         }
 
@@ -1983,6 +2001,17 @@
         .language-switch {
             width: 76px;
             height: 36px;
+        }
+
+        @media (min-width: 951px) {
+            .site-nav {
+                gap: 7px !important;
+            }
+
+            .site-nav a {
+                padding: 8px 12px !important;
+                font-size: .86rem !important;
+            }
         }
 
         @media (max-width: 950px) {
@@ -2177,9 +2206,9 @@
                     <div class="body-copy prose">
                         <p>
                             Bei zwei gelabelten Fällen pro Klasse erreicht die RBM-Repräsentation eine mittlere AUROC von
-                            <strong>0,9691</strong>;
+                            <strong>0,9691;</strong>
                             die direkte Logistik erreicht
-                            <strong>0,9582</strong>.
+                            <strong>0,9582.</strong>
                             Die Differenz beträgt 0,0109. Mit steigender Labelzahl verbessert sich vor allem die direkte Logistik, während die RBM-Kurve weitgehend konstant bleibt.
                         </p>
                     </div>
@@ -2943,6 +2972,9 @@
                 <div class="article-grid">
                     <div class="body-copy">
                         <div class="sources">
+                            <h3>
+                                Referenzen
+                            </h3>
                             <ol>
                                 <li id="quelle-1">
                                     Wolberg W., Mangasarian O., Street N., Street W.
