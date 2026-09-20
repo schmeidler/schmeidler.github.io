@@ -222,13 +222,13 @@ main{padding:22px 0 28px}
 .graph-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--page-muted);font-size:14px}
 .graph .peer-edge,.graph .center-edge{stroke:var(--page-fg);stroke-linecap:round;opacity:1}
 .graph .network-node{cursor:pointer}
-.graph .node-disc{fill:var(--page-bg);stroke:var(--page-line);stroke-width:1}
+.graph .node-disc{fill:var(--page-bg);stroke:var(--page-line);stroke-width:1.4}
 .graph .node-dot{fill:var(--page-fg);pointer-events:none}
 .graph .node-label-box{fill:var(--page-bg);stroke:var(--page-line);stroke-width:1;pointer-events:none}
 .graph .node-label{fill:var(--page-fg);font-size:12px;font-weight:400;pointer-events:none}
-.graph .network-node:hover .node-disc,.graph .network-node:focus-visible .node-disc{fill:var(--page-fg);stroke-width:1.5}
+.graph .network-node:hover .node-disc,.graph .network-node:focus-visible .node-disc{fill:var(--page-fg);stroke-width:1.8}
 .graph .network-node:hover .node-dot,.graph .network-node:focus-visible .node-dot{fill:var(--page-bg)}
-.graph .center-disc{fill:var(--page-fg);stroke:var(--page-line);stroke-width:1}
+.graph .center-disc{fill:var(--page-fg);stroke:var(--page-line);stroke-width:1.4}
 .graph .center-label{fill:var(--page-bg);font-family:var(--heading-serif);font-size:15px;font-weight:400;pointer-events:none}
 .graph-note{padding:13px 42px;border-top:1px solid var(--page-line);color:var(--page-muted);font-size:13px;line-height:1.65}
 
@@ -262,20 +262,8 @@ dialog::-webkit-scrollbar{display:none;width:0;height:0}
 dialog::backdrop{background:color-mix(in srgb,#000 44%,transparent)}
 .dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:22px;border-bottom:1px solid var(--page-line)}
 .dialog-heading h2{display:block;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font-family:var(--heading-serif);font-size:clamp(32px,3.8vw,59px);line-height:1.04;font-weight:400;letter-spacing:-.035em}
-.close-button{
-  width:46px;
-  height:46px;
-  flex:0 0 46px;
-  padding:0;
-  border:1px solid var(--page-line);
-  border-radius:50%;
-  background:transparent;
-  color:inherit;
-  display:grid;
-  place-items:center;
-  font-size:25px;
-  line-height:1;
-}
+.close-button{width:46px;height:46px;flex:0 0 46px;padding:0;border:1px solid var(--page-line);border-radius:50%;background:transparent;color:inherit;display:grid;place-items:center;line-height:0}
+.close-button svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .close-button:hover{background:var(--page-fg);color:var(--page-bg)}
 .method-section{padding-top:24px;font-size:14px;line-height:1.65}
 .method-section h3{display:block;margin:0 0 10px;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:400 24px/1.2 var(--heading-serif)}
