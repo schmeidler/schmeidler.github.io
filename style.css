@@ -4508,3 +4508,18 @@ html[data-theme="dark"] .theme-track .theme-moon {
     padding-top: 24px !important;
   }
 }
+
+@media (min-width: 951px) {
+  .site-header .site-nav {
+    gap: 7px !important;
+  }
+
+  .site-header .site-nav a {
+    padding: 8px 12px !important;
+    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+    font-size: .86rem !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    letter-spacing: normal !important;
+  }
+}
