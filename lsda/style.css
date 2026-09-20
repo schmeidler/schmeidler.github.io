@@ -283,7 +283,7 @@ dialog::backdrop{background:color-mix(in srgb,#000 44%,transparent)}
   content:"";
   position:absolute;
   left:50%;
-  top:calc(50% - 1px);
+  top:calc(50% - 2px);
   width:20px;
   height:2px;
   margin-left:-10px;
