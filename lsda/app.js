@@ -7,6 +7,7 @@ const locale = isDE ? 'de-AT' : 'en-GB';
 const numberFormatter = new Intl.NumberFormat(locale);
 const fmt = value => numberFormatter.format(value);
 const fmt1 = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmt3 = new Intl.NumberFormat(locale, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const t = isDE ? {
   represented: 'im Modell dargestellte Erkrankungen',
   opened: name => `${name} wurde als Zentrum des Netzwerks geöffnet.`,
@@ -26,7 +27,22 @@ const t = isDE ? {
   loadError: status => `Der Datensatz konnte nicht geladen werden (${status}).`,
   invalidData: 'Ungültiger Modelldatensatz.',
   unavailable: 'Modell nicht verfügbar',
-  localServer: 'Bitte öffne die App über einen lokalen Webserver.'
+  localServer: 'Bitte öffne die App über einen lokalen Webserver.',
+  edgeDetails: 'Kantendetails',
+  similarity: 'Ähnlichkeit',
+  sharedEvidence: 'Gemeinsame Evidenz',
+  topShared: 'Top 5 gemeinsame Merkmale',
+  contribution: 'Beitrag',
+  phenotypeShort: 'Phänotypen',
+  geneShort: 'Gene / Proteine',
+  pathwayShort: 'Pathways',
+  phenotypeOne: 'Phänotyp',
+  geneOne: 'Gen / Protein',
+  pathwayOne: 'Pathway',
+  noShared: 'Keine gemeinsamen ausgewählten Merkmale.',
+  contributionNote: 'Contribution = relativer Anteil der blockweisen Jaccard-Überlappung; keine Attribution der RBM-Similarity.',
+  closeEdge: 'Kantendetails schließen',
+  openEdge: (a, b) => `Details zur Verbindung zwischen ${a} und ${b} öffnen`
 } : {
   represented: 'diseases represented in the model',
   opened: name => `${name} opened as the centre of the network.`,
@@ -46,12 +62,28 @@ const t = isDE ? {
   loadError: status => `The data set could not be loaded (${status}).`,
   invalidData: 'Invalid model data set.',
   unavailable: 'Model unavailable',
-  localServer: 'Please open the app through a local web server.'
+  localServer: 'Please open the app through a local web server.',
+  edgeDetails: 'Edge details',
+  similarity: 'Similarity',
+  sharedEvidence: 'Shared evidence',
+  topShared: 'Top 5 shared features',
+  contribution: 'Contribution',
+  phenotypeShort: 'Phenotypes',
+  geneShort: 'Genes / proteins',
+  pathwayShort: 'Pathways',
+  phenotypeOne: 'Phenotype',
+  geneOne: 'Gene / protein',
+  pathwayOne: 'Pathway',
+  noShared: 'No shared selected features.',
+  contributionNote: 'Contribution = relative share of block-wise Jaccard overlap; not an attribution of RBM similarity.',
+  closeEdge: 'Close edge details',
+  openEdge: (a, b) => `Open details for the connection between ${a} and ${b}`
 };
 
 let data;
 let center = -1;
 let catalogByIndex = [];
+let featureDf = [];
 
 function cosine(a, b){
   let dot = 0, na = 0, nb = 0;
@@ -129,6 +161,158 @@ function selectDisease(record){
   $('status').textContent = t.opened(record.name);
 }
 
+function prepareFeatureStats(){
+  featureDf = new Uint16Array(data.features.length);
+  for(const disease of data.diseases){
+    for(const block of disease.features){
+      for(const featureIndex of block) featureDf[featureIndex] += 1;
+    }
+  }
+}
+
+function intersectFeatures(a, b){
+  const setB = new Set(b);
+  return a.filter(value => setB.has(value));
+}
+
+function contributionPercentages(scores){
+  const total = scores.reduce((sum, value) => sum + value, 0);
+  if(!total) return [0, 0, 0];
+  const raw = scores.map(value => value / total * 100);
+  const result = raw.map(Math.floor);
+  let remaining = 100 - result.reduce((sum, value) => sum + value, 0);
+  const order = raw
+    .map((value, index) => ({index, fraction: value - Math.floor(value)}))
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  for(let i = 0; i < remaining; i++) result[order[i % order.length].index] += 1;
+  return result;
+}
+
+function explainEdge(aIndex, bIndex, score){
+  const a = data.diseases[aIndex];
+  const b = data.diseases[bIndex];
+  const shared = a.features.map((block, index) => intersectFeatures(block, b.features[index]));
+  const jaccard = shared.map((items, index) => {
+    const union = new Set([...a.features[index], ...b.features[index]]).size;
+    return union ? items.length / union : 0;
+  });
+  const contribution = contributionPercentages(jaccard);
+  const allShared = [...new Set(shared.flat())];
+  const ranked = allShared
+    .map(featureIndex => {
+      const feature = data.features[featureIndex];
+      const idf = Math.log((data.diseases.length + 1) / ((featureDf[featureIndex] || 0) + 1)) + 1;
+      return {featureIndex, feature, idf};
+    })
+    .sort((x, y) => y.idf - x.idf || x.feature.name.localeCompare(y.feature.name));
+  const top = [];
+  for(const kind of ['s', 'g', 'p']){
+    const candidate = ranked.find(item => item.feature.kind === kind);
+    if(candidate) top.push(candidate);
+  }
+  for(const candidate of ranked){
+    if(top.length >= 5) break;
+    if(!top.includes(candidate)) top.push(candidate);
+  }
+  return {score, shared, contribution, top};
+}
+
+function featureKindLabel(kind){
+  if(kind === 's') return t.phenotypeOne;
+  if(kind === 'g') return t.geneOne;
+  return t.pathwayOne;
+}
+
+function edgeInspectorContent(aIndex, bIndex, score){
+  const aName = catalogByIndex[aIndex].name;
+  const bName = catalogByIndex[bIndex].name;
+  const explanation = explainEdge(aIndex, bIndex, score);
+  const labels = [t.phenotypeShort, t.geneShort, t.pathwayShort];
+  const evidence = explanation.shared.map((items, index) => `
+    <div class="edge-evidence-item"><strong>${fmt(items.length)}</strong><span>${labels[index]}</span></div>`).join('');
+  const features = explanation.top.length
+    ? explanation.top.map(({feature}) => `<li><span>${escapeHtml(feature.name)}</span><small>${escapeHtml(featureKindLabel(feature.kind))}</small></li>`).join('')
+    : `<li class="edge-feature-empty">${t.noShared}</li>`;
+  const contribution = explanation.contribution.map((value, index) => `
+    <div class="edge-contribution-row">
+      <span>${labels[index]}</span>
+      <span class="edge-contribution-track" aria-hidden="true"><i style="width:${value}%"></i></span>
+      <strong>${value}%</strong>
+    </div>`).join('');
+  return `
+    <button class="edge-inspector-close" type="button" aria-label="${escapeHtml(t.closeEdge)}">×</button>
+    <p class="edge-inspector-kicker">${t.edgeDetails}</p>
+    <h3>${escapeHtml(aName)} <span aria-hidden="true">↔</span> ${escapeHtml(bName)}</h3>
+    <div class="edge-similarity"><span>${t.similarity}</span><strong>${fmt3.format(score)}</strong></div>
+    <section class="edge-inspector-section">
+      <h4>${t.sharedEvidence}</h4>
+      <div class="edge-evidence-grid">${evidence}</div>
+    </section>
+    <section class="edge-inspector-section">
+      <h4>${t.topShared}</h4>
+      <ol class="edge-feature-list">${features}</ol>
+    </section>
+    <section class="edge-inspector-section">
+      <h4>${t.contribution}</h4>
+      <div class="edge-contribution-list">${contribution}</div>
+      <p class="edge-contribution-note">${t.contributionNote}</p>
+    </section>`;
+}
+
+function edgeMarkup(aIndex, bIndex, score, x1, y1, x2, y2, className, strokeWidth){
+  const aName = catalogByIndex[aIndex].name;
+  const bName = catalogByIndex[bIndex].name;
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  return `<g class="edge-link" role="button" tabindex="0" data-a="${aIndex}" data-b="${bIndex}" data-score="${score}" data-mx="${mx}" data-my="${my}" aria-label="${escapeHtml(t.openEdge(aName, bName))}">
+    <line class="edge-hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
+    <line class="edge-stroke ${className}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth.toFixed(2)}"/>
+    <title>${escapeHtml(aName)} ↔ ${escapeHtml(bName)}</title>
+  </g>`;
+}
+
+function openEdgeInspector(edge, graph, width, height){
+  graph.querySelectorAll('.edge-link.is-selected').forEach(item => item.classList.remove('is-selected'));
+  edge.classList.add('is-selected');
+  const panel = graph.querySelector('.edge-inspector');
+  const aIndex = Number(edge.dataset.a);
+  const bIndex = Number(edge.dataset.b);
+  const score = Number(edge.dataset.score);
+  panel.innerHTML = edgeInspectorContent(aIndex, bIndex, score);
+  panel.hidden = false;
+
+  const mx = Number(edge.dataset.mx);
+  const my = Number(edge.dataset.my);
+  const mobile = width < 620;
+  panel.classList.toggle('is-mobile', mobile);
+  if(mobile){
+    panel.style.left = '12px';
+    panel.style.right = '12px';
+    panel.style.top = 'auto';
+    panel.style.bottom = '12px';
+    panel.style.transform = 'none';
+  }else{
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    requestAnimationFrame(() => {
+      const panelWidth = panel.offsetWidth || 320;
+      const panelHeight = panel.offsetHeight || 300;
+      const x = Math.max(panelWidth / 2 + 16, Math.min(width - panelWidth / 2 - 16, mx));
+      const placeAbove = my > panelHeight + 44;
+      const y = placeAbove ? my - 14 : Math.min(height - panelHeight - 16, my + 14);
+      panel.style.left = `${x}px`;
+      panel.style.top = `${Math.max(16, y)}px`;
+      panel.style.transform = placeAbove ? 'translate(-50%,-100%)' : 'translate(-50%,0)';
+    });
+  }
+
+  panel.querySelector('.edge-inspector-close').addEventListener('click', event => {
+    event.stopPropagation();
+    panel.hidden = true;
+    edge.classList.remove('is-selected');
+  });
+}
+
 function buildPeerEdges(points){
   const candidates = [];
   const seen = new Set();
@@ -168,12 +352,12 @@ function renderGraph(){
 
   const peerEdges = buildPeerEdges(points).map(({a, b, score}) => {
     const strokeWidth = 0.65 + Math.max(0, score) * 0.8;
-    return `<line class="peer-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke-width="${strokeWidth.toFixed(2)}"><title>${escapeHtml(catalogByIndex[a.i].name)} ↔ ${escapeHtml(catalogByIndex[b.i].name)}</title></line>`;
+    return edgeMarkup(a.i, b.i, score, a.x, a.y, b.x, b.y, 'peer-edge', strokeWidth);
   }).join('');
 
   const centerEdges = points.map(p => {
     const strokeWidth = 0.8 + Math.max(0, p.score) * 1.35;
-    return `<line class="center-edge" x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke-width="${strokeWidth.toFixed(2)}"><title>${escapeHtml(catalogByIndex[p.i].name)}</title></line>`;
+    return edgeMarkup(center, p.i, p.score, cx, cy, p.x, p.y, 'center-edge', strokeWidth);
   }).join('');
 
   const nodeRadius = mobile ? 18 : 21;
@@ -197,12 +381,33 @@ function renderGraph(){
   const centerText = svgText(centerName, cx, cy - ((centerLines.length - 1) * centerGap) / 2 + (mobile ? 5 : 6), centerMaxChars, 'center-label', 3, centerGap);
 
   graph.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" aria-label="${escapeHtml(t.graphLabel(centerName))}">
-    <g aria-hidden="true">${peerEdges}${centerEdges}</g>
+    <g class="network-edges">${peerEdges}${centerEdges}</g>
     <circle class="center-disc" cx="${cx}" cy="${cy}" r="${centerR}"/>
     ${centerText}
     ${nodes}
-  </svg>`;
+  </svg>
+  <aside class="edge-inspector" hidden></aside>`;
   graph.setAttribute('aria-busy', 'false');
+
+  graph.querySelectorAll('.edge-link').forEach(edge => {
+    const open = event => {
+      event?.stopPropagation();
+      openEdgeInspector(edge, graph, width, height);
+    };
+    edge.addEventListener('click', open);
+    edge.addEventListener('keydown', event => {
+      if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); open(event); }
+    });
+  });
+
+  graph.querySelector('svg').addEventListener('click', event => {
+    if(event.target.closest?.('.edge-link')) return;
+    const panel = graph.querySelector('.edge-inspector');
+    if(panel && !panel.hidden){
+      panel.hidden = true;
+      graph.querySelectorAll('.edge-link.is-selected').forEach(item => item.classList.remove('is-selected'));
+    }
+  });
 
   graph.querySelectorAll('.network-node').forEach(node => {
     const open = () => selectDisease(catalogByIndex[Number(node.dataset.index)]);
@@ -287,6 +492,7 @@ async function init(){
     data = await response.json();
     if(!data.embeddings?.length || data.embeddings.length !== data.diseases.length) throw new Error(t.invalidData);
     for(const disease of data.catalog){ if(disease.modelIndex >= 0) catalogByIndex[disease.modelIndex] = disease; }
+    prepareFeatureStats();
     renderMethod();
     const first = data.catalog.find(d => d.modelIndex >= 0 && d.name.toLowerCase() === 'parkinson disease')
       || data.catalog.find(d => d.modelIndex >= 0 && d.name.toLowerCase().includes('parkinson'))

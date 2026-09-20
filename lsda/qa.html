@@ -17,6 +17,15 @@
   </script>
   <link rel="stylesheet" href="style.css?v=47">
   <script src="app.js?v=47" defer></script>
+  <script>
+    const qaTimer = setInterval(() => {
+      const edge = document.querySelector('.edge-link');
+      if(edge){
+        edge.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+        clearInterval(qaTimer);
+      }
+    }, 100);
+  </script>
 </head>
 <body>
   <header class="site-header">
@@ -120,7 +129,7 @@
       </div>
 
       <div class="graph-note">
-        <span>Select any node to make it the new centre. Select an edge to inspect the connection.</span>
+        <span>Select any node to make it the new centre.</span>
       </div>
     </section>
 
