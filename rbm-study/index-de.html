@@ -1996,8 +1996,13 @@
             }
 
             .site-nav {
+                display: none;
                 font-size: .92rem;
                 font-weight: 500;
+            }
+
+            .site-nav.open {
+                display: flex;
             }
 
             .site-nav a {
@@ -2034,9 +2039,7 @@
     </style>
 </head>
 <body id="anfang">
-<a class="skip" href="#inhalt">
-    Zum Inhalt springen
-</a>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
 <header class="site-header">
     <div class="header-left">
         <div aria-label="Sprachauswahl" class="language-switch lang-de">
@@ -2093,26 +2096,14 @@
     </span>
         <span>
     </span>
-        <span class="sr-only">
-     Menü öffnen
-    </span>
+        <span class="sr-only">Menü öffnen</span>
     </button>
     <nav aria-label="Abschnitte der Methodenstudie" class="site-nav" id="study-nav">
-        <a href="#ueberblick">
-            Überblick
-        </a>
-        <a href="#ergebnisse">
-            Ergebnisse
-        </a>
-        <a href="#methodik">
-            Methodik
-        </a>
-        <a href="#einordnung">
-            Einordnung
-        </a>
-        <a href="#material">
-            Quellen
-        </a>
+        <a href="#ueberblick">Überblick</a>
+        <a href="#ergebnisse">Ergebnisse</a>
+        <a href="#methodik">Methodik</a>
+        <a href="#einordnung">Einordnung</a>
+        <a href="#material">Quellen</a>
     </nav>
 </header>
 <div class="shell">
@@ -2127,9 +2118,7 @@
                         do machines dream
                         <br class="title-break"/>
                         of
-                        <em>
-                            unseen labels?
-                        </em>
+                        <em>unseen labels?</em>
                     </h1>
                     <p class="subtitle">
                         Restricted Boltzmann Machines bei extremer Labelknappheit
@@ -2164,9 +2153,7 @@
                         </p>
                     </div>
                     <aside class="sidenote">
-        <span class="note-label">
-         Was hier „unbeschriftet“ heißt
-        </span>
+        <span class="note-label">Was hier „unbeschriftet“ heißt</span>
                         <p>
                             Die Merkmale sind vorhanden, die Diagnosen werden für das Vortraining verborgen. Die RBM erzeugt keine neuen Labels. Der abschließende Klassifikator erhält echte Diagnoselabels.
                         </p>
@@ -2175,9 +2162,7 @@
             </div>
             <section aria-labelledby="results-heading" class="section content-card" id="ergebnisse">
                 <div class="card-heading">
-       <span class="section-number">
-        01
-       </span>
+       <span class="section-number">01</span>
                     <h2 id="results-heading">
                         Ergebnisse
                     </h2>
@@ -2192,26 +2177,18 @@
                     <div class="body-copy prose">
                         <p>
                             Bei zwei gelabelten Fällen pro Klasse erreicht die RBM-Repräsentation eine mittlere AUROC von
-                            <strong>
-                                0,9691;
-                            </strong>
+                            <strong>0,9691;</strong>
                             die direkte Logistik erreicht
-                            <strong>
-                                0,9582.
-                            </strong>
+                            <strong>0,9582.</strong>
                             Die Differenz beträgt 0,0109. Mit steigender Labelzahl verbessert sich vor allem die direkte Logistik, während die RBM-Kurve weitgehend konstant bleibt.
                         </p>
                     </div>
                     <aside class="sidenote">
-        <span class="note-label">
-         Lesart der Kennzahlen
-        </span>
+        <span class="note-label">Lesart der Kennzahlen</span>
                         <p>
                             AUROC bewertet die Rangordnung, nicht die Trefferquote. Average Precision (AP) fasst die Precision-Recall-Kurve zusammen. Positive Klasse: maligne Läsion.
                             <sup>
-                                <a aria-label="Quelle 3" href="#quelle-3">
-                                    3
-                                </a>
+                                <a aria-label="Quelle 3" href="#quelle-3">3</a>
                             </sup>
                         </p>
                     </aside>
@@ -2223,9 +2200,7 @@
                 </noscript>
                 <figure aria-labelledby="fig-one-title" class="chart-figure js-only">
                     <div class="figure-head">
-        <span class="figure-title" id="fig-one-title">
-         Abbildung 1. Leistung nach Labelzahl
-        </span>
+        <span class="figure-title" id="fig-one-title">Abbildung 1. Leistung nach Labelzahl</span>
                         <div aria-label="Kennzahl der Grafiken" class="metric-switch" role="group">
                             <button aria-pressed="true" data-metric="auroc" type="button">
                                 AUROC
@@ -2257,9 +2232,7 @@
                             </div>
                         </div>
                         <aside class="chart-note">
-         <span class="label">
-          Zum Vergleich
-         </span>
+         <span class="label">Zum Vergleich</span>
                             <p>
                                 Alle Modelle erhalten innerhalb einer Aufteilung dieselben gelabelten Beispiele. Die RBM nutzt zusätzlich die Struktur des unbeschrifteten Trainingspools.
                             </p>
@@ -2269,16 +2242,10 @@
                         </aside>
                     </div>
                     <figcaption>
-        <span class="fig-no">
-         Abb. 1.
-        </span>
+        <span class="fig-no">Abb. 1.</span>
                         Mittelwerte aus zehn stratifizierten Aufteilungen mit jeweils 50 Label-Ziehungen. Linien verbinden getrennt ausgewertete Label-Budgets, keine fortlaufende Annotation derselben Fälle. Optional: ± eine Standardabweichung der zehn Aufteilungs-Mittelwerte für RBM und direkte Logistik. Diese Streuung ist
-                        <strong>
-                            kein Konfidenzintervall.
-                        </strong>
-                        <span id="axis-note">
-         Die y-Achse zeigt einen Ausschnitt von 0,70 bis 1,00.
-        </span>
+                        <strong>kein Konfidenzintervall.</strong>
+                        <span id="axis-note">Die y-Achse zeigt einen Ausschnitt von 0,70 bis 1,00.</span>
                     </figcaption>
                 </figure>
                 <div class="article-grid results-table">
@@ -2391,9 +2358,7 @@
                         </div>
                     </div>
                     <aside class="sidenote">
-        <span class="note-label">
-         Keine unabhängigen Kohorten
-        </span>
+        <span class="note-label">Keine unabhängigen Kohorten</span>
                         <p>
                             Die zehn Aufteilungen verwenden denselben Datensatz, ihre Fälle überlappen. Die Mittelwerte beschreiben diesen Benchmark.
                         </p>
@@ -2402,9 +2367,7 @@
                 <div class="article-grid">
                     <figure aria-labelledby="fig-two-title" class="body-copy delta-figure js-only">
                         <div class="delta-head">
-         <span class="figure-title" id="fig-two-title">
-          Abbildung 2. Differenzen je Aufteilung
-         </span>
+         <span class="figure-title" id="fig-two-title">Abbildung 2. Differenzen je Aufteilung</span>
                             <label class="delta-select" for="budget">
                                 Labels je Klasse
                                 <select id="budget">
@@ -2431,9 +2394,7 @@
                         <p aria-live="polite" id="split-copy">
                         </p>
                         <figcaption>
-         <span class="fig-no">
-          Abb. 2.
-         </span>
+         <span class="fig-no">Abb. 2.</span>
                             Ein Punkt entspricht der mittleren Differenz einer Aufteilung über 50 gepaarte Label-Ziehungen. Die Raute markiert den Gesamtmittelwert. Positive Werte liegen zugunsten der RBM. Auch diese Darstellung ist deskriptiv.
                         </figcaption>
                     </figure>
@@ -2755,9 +2716,7 @@
             </section>
             <section aria-labelledby="method-heading" class="section content-card" id="methodik">
                 <div class="card-heading">
-       <span class="section-number">
-        02
-       </span>
+       <span class="section-number">02</span>
                     <h2 id="method-heading">
                         Methodik
                     </h2>
@@ -2779,65 +2738,37 @@
                         <p>
                             Der Wisconsin-Diagnostic-Breast-Cancer-Datensatz (WDBC) enthält 569 Fälle mit 30 numerischen Zellkernmerkmalen. Diese Merkmale wurden aus digitalisierten Feinnadelaspiraten von Brustläsionen berechnet. Analysiert werden hier die tabellarischen Merkmale, nicht die Originalbilder.
                             <sup>
-                                <a aria-label="Quelle 1" href="#quelle-1">
-                                    1
-                                </a>
+                                <a aria-label="Quelle 1" href="#quelle-1">1</a>
                             </sup>
                         </p>
                         <p>
                             Für jede Aufteilung werden 426 Fälle als Trainingspool und 143 als Testfälle zurückgehalten. Skalierung, Diskretisierung und Repräsentationslernen erfolgen nur im Trainingspool. Die Testfälle bleiben auch vom unüberwachten Vortraining ausgeschlossen.
                         </p>
                         <div aria-label="Modellablauf" class="method-sequence">
-         <span>
-          30 Morphologiemerkmale
-         </span>
-                            <i aria-hidden="true">
-                                →
-                            </i>
-                            <span>
-          Quantil-Kodierung
-         </span>
-                            <i aria-hidden="true">
-                                →
-                            </i>
-                            <span>
-          RBM mit 32 Einheiten
-         </span>
-                            <i aria-hidden="true">
-                                →
-                            </i>
-                            <span>
-          Logistik
-         </span>
+         <span>30 Morphologiemerkmale</span>
+                            <i aria-hidden="true">→</i>
+                            <span>Quantil-Kodierung</span>
+                            <i aria-hidden="true">→</i>
+                            <span>RBM mit 32 Einheiten</span>
+                            <i aria-hidden="true">→</i>
+                            <span>Logistik</span>
                         </div>
                         <p>
                             Die kontinuierlichen Merkmale werden in bis zu fünf Quantilbereiche aufgeteilt und binär kodiert. Eine Bernoulli-RBM lernt gemeinsame Muster dieser Eingaben, ohne Diagnoselabels zu verwenden. Ihre Aktivierungswahrscheinlichkeiten dienen anschließend als 32 Merkmale einer regularisierten logistischen Regression.
                             <sup>
-                                <a aria-label="Quelle 2" href="#quelle-2">
-                                    2
-                                </a>
+                                <a aria-label="Quelle 2" href="#quelle-2">2</a>
                             </sup>
                         </p>
                         <p aria-label="Aktivierungswahrscheinlichkeit einer verborgenen Einheit" class="formula">
                             h
-                            <sub>
-                                j
-                            </sub>
+                            <sub>j</sub>
                             (x) = P(H
-                            <sub>
-                                j
-                            </sub>
+                            <sub>j</sub>
                             = 1 | x) = σ(b
-                            <sub>
-                                j
-                            </sub>
+                            <sub>j</sub>
                             + w
-                            <sub>
-                                j
-                            </sub>
-                            <sup>
-                                T
-                            </sup>
+                            <sub>j</sub>
+                            <sup>T</sup>
                             x)
                         </p>
                         <p>
@@ -2845,9 +2776,7 @@
                         </p>
                     </div>
                     <aside class="sidenote">
-        <span class="note-label">
-         Datensatz und Ziel
-        </span>
+        <span class="note-label">Datensatz und Ziel</span>
                         <dl>
                             <dt>
                                 Fälle
@@ -2900,19 +2829,14 @@
                                         Direkte Logistik
                                     </dt>
                                     <dd>
-                                        <code>
-                                            StandardScaler
-                                        </code>
+                                        <code>StandardScaler</code>
                                         auf allen unbeschrifteten Trainingsfällen. 30 kontinuierliche Merkmale.
                                     </dd>
                                     <dt>
                                         Diskretisierung
                                     </dt>
                                     <dd>
-                                        <code>
-                                            KBinsDiscretizer(n_bins=5, strategy='quantile')
-                                        </code>
-                                        , One-Hot-Kodierung; ausschließlich im Trainingspool angepasst.
+                                        <code>KBinsDiscretizer(n_bins=5, strategy='quantile')</code>, One-Hot-Kodierung; ausschließlich im Trainingspool angepasst.
                                     </dd>
                                     <dt>
                                         SVD
@@ -2926,9 +2850,7 @@
                                     <dd>
                                         32 verborgene Einheiten, Lernrate 0,05, Batchgröße 32, 50 Epochen, Seeds 2000–2009. Persistent Contrastive Divergence in scikit-learn.
                                         <sup>
-                                            <a aria-label="Quelle 2" href="#quelle-2">
-                                                2
-                                            </a>
+                                            <a aria-label="Quelle 2" href="#quelle-2">2</a>
                                         </sup>
                                     </dd>
                                     <dt>
@@ -2936,38 +2858,25 @@
                                     </dt>
                                     <dd>
                                         Sigmoid-Encoder mit 32 Dimensionen und Sigmoid-Decoder. Binäre Kreuzentropie, Adam, Lernrate 0,01, Weight Decay 10
-                                        <sup>
-                                            −5
-                                        </sup>
-                                        , 250 Full-Batch-Epochen. Eine festgelegte Konfiguration, kein umfassender Architekturvergleich.
+                                        <sup>−5</sup>, 250 Full-Batch-Epochen. Eine festgelegte Konfiguration, kein umfassender Architekturvergleich.
                                     </dd>
                                     <dt>
                                         Klassifikator
                                     </dt>
                                     <dd>
                                         In allen Varianten
-                                        <code>
-                                            LogisticRegression(C=0.1, solver='liblinear', max_iter=1000)
-                                        </code>
-                                        . RBM- und Autoencoder-Aktivierungen ohne weitere Standardisierung. Gleicher C-Wert bedeutet bei unterschiedlichen Merkmalsskalen nicht dieselbe effektive Regularisierung.
+                                        <code>LogisticRegression(C=0.1, solver='liblinear', max_iter=1000)</code>. RBM- und Autoencoder-Aktivierungen ohne weitere Standardisierung. Gleicher C-Wert bedeutet bei unterschiedlichen Merkmalsskalen nicht dieselbe effektive Regularisierung.
                                     </dd>
                                     <dt>
                                         Auswertung
                                     </dt>
                                     <dd>
                                         10.000 gespeicherte Modellläufe: fünf Modelle × vier Labelzahlen × zehn Aufteilungen × 50 Ziehungen. Average Precision wurde mit
-                                        <code>
-                                            average_precision_score
-                                        </code>
+                                        <code>average_precision_score</code>
                                         berechnet; die historische Exportspalte heißt
-                                        <code>
-                                            auprc
-                                        </code>
-                                        .
+                                        <code>auprc</code>.
                                         <sup>
-                                            <a aria-label="Quelle 3" href="#quelle-3">
-                                                3
-                                            </a>
+                                            <a aria-label="Quelle 3" href="#quelle-3">3</a>
                                         </sup>
                                     </dd>
                                 </dl>
@@ -2978,9 +2887,7 @@
             </section>
             <section aria-labelledby="discussion-heading" class="section interpretation content-card" id="einordnung">
                 <div class="card-heading">
-       <span class="section-number">
-        03
-       </span>
+       <span class="section-number">03</span>
                     <h2 id="discussion-heading">
                         Einordnung und Grenzen
                     </h2>
@@ -3008,16 +2915,12 @@
                         <p>
                             Auch die Grundidee ist nicht neu: RBM-basierte Verfahren für das Lernen mit wenigen Labels in der Brustbilddiagnostik wurden bereits untersucht. Der Sinn dieses kleinen Projekts ist ein nachvollziehbarer Vergleich auf tabellarischen Daten, einschließlich der Bedingungen, unter denen der beobachtete Vorteil verschwindet.
                             <sup>
-                                <a aria-label="Quelle 4" href="#quelle-4">
-                                    4
-                                </a>
+                                <a aria-label="Quelle 4" href="#quelle-4">4</a>
                             </sup>
                         </p>
                     </div>
                     <aside class="sidenote">
-        <span class="note-label">
-         Fazit
-        </span>
+        <span class="note-label">Fazit</span>
                         <p>
                             Eine kleine Nische für ein älteres Modell: Bei zwei bis drei Labels je Klasse ist ein mittlerer Vorsprung zu sehen. Mehr gelabelte Beispiele verringern den Unterschied und kehren ihn schließlich um.
                         </p>
@@ -3026,9 +2929,7 @@
             </section>
             <section aria-labelledby="material-heading" class="material content-card" id="material">
                 <div class="card-heading">
-       <span class="section-number">
-        04
-       </span>
+       <span class="section-number">04</span>
                     <h2 id="material-heading">
                         Quellen
                     </h2>
@@ -3048,39 +2949,25 @@
                             <ol>
                                 <li id="quelle-1">
                                     Wolberg W., Mangasarian O., Street N., Street W.
-                                    <a href="https://doi.org/10.24432/C5DW2B">
-                                        Breast Cancer Wisconsin (Diagnostic)
-                                    </a>
-                                    . UCI Machine Learning Repository, 1993.
+                                    <a href="https://doi.org/10.24432/C5DW2B">Breast Cancer Wisconsin (Diagnostic)</a>. UCI Machine Learning Repository, 1993.
                                 </li>
                                 <li id="quelle-2">
                                     scikit-learn.
-                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.BernoulliRBM.html">
-                                        BernoulliRBM
-                                    </a>
-                                    .
+                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.BernoulliRBM.html">BernoulliRBM</a>.
                                 </li>
                                 <li id="quelle-3">
                                     scikit-learn.
-                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">
-                                        Average Precision
-                                    </a>
-                                    .
+                                    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">Average Precision</a>.
                                 </li>
                                 <li id="quelle-4">
                                     Cao et al.
-                                    <a href="https://doi.org/10.3233/BME-151453">
-                                        RBM-based oversampling and semi-supervised learning for breast CAD
-                                    </a>
-                                    , 2015.
+                                    <a href="https://doi.org/10.3233/BME-151453">RBM-based oversampling and semi-supervised learning for breast CAD</a>, 2015.
                                 </li>
                             </ol>
                         </div>
                         <p class="license">
                             Der WDBC-Datensatz wird unter
-                            <a href="https://creativecommons.org/licenses/by/4.0/">
-                                CC BY 4.0
-                            </a>
+                            <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
                             bereitgestellt.
                         </p>
                     </div>
