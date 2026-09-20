@@ -262,7 +262,20 @@ dialog::-webkit-scrollbar{display:none;width:0;height:0}
 dialog::backdrop{background:color-mix(in srgb,#000 44%,transparent)}
 .dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:22px;border-bottom:1px solid var(--page-line)}
 .dialog-heading h2{display:block;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font-family:var(--heading-serif);font-size:clamp(32px,3.8vw,59px);line-height:1.04;font-weight:400;letter-spacing:-.035em}
-.close-button{width:46px;height:46px;flex:0 0 46px;border:1px solid var(--page-line);border-radius:50%;background:transparent;color:inherit;font-size:25px;line-height:1}
+.close-button{
+  width:46px;
+  height:46px;
+  flex:0 0 46px;
+  padding:0;
+  border:1px solid var(--page-line);
+  border-radius:50%;
+  background:transparent;
+  color:inherit;
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  line-height:1;
+}
 .close-button:hover{background:var(--page-fg);color:var(--page-bg)}
 .method-section{padding-top:24px;font-size:14px;line-height:1.65}
 .method-section h3{display:block;margin:0 0 10px;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:400 24px/1.2 var(--heading-serif)}
