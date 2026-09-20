@@ -1046,3 +1046,12 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
 .edge-inspector-close{
   display:none !important;
 }
+
+.close-button{
+  display:none !important;
+}
+
+.site-header{
+  position:sticky !important;
+  top:0;
+}
