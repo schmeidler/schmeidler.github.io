@@ -1042,3 +1042,7 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
 .edge-similarity{
   margin-bottom:20px !important;
 }
+
+.edge-inspector-close{
+  display:none !important;
+}
