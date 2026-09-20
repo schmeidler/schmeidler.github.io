@@ -1030,3 +1030,11 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
 .close-button::after{
   transform:translate(-50%, calc(-50% - 2px)) rotate(-45deg) !important;
 }
+
+.edge-inspector-section + .edge-inspector-section{
+  margin-top:28px !important;
+}
+
+.edge-inspector-section{
+  padding-top:18px;
+}
