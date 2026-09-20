@@ -1064,3 +1064,7 @@ dialog:focus-visible{
 .method-section + .method-section{
   margin-top:32px;
 }
+
+#methodContent .method-section:first-child{
+  padding-top:32px !important;
+}
