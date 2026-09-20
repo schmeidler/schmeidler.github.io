@@ -595,6 +595,16 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   font-weight:400!important;
   letter-spacing:normal!important;
 }
+@media(min-width:951px){
+  .site-header .nav{
+    gap:7px!important;
+  }
+  .site-header .nav a,
+  .site-header .nav .nav-control{
+    padding:8px 12px!important;
+    font-size:.86rem!important;
+  }
+}
 
 .hero{
   gap:0;
