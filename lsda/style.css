@@ -1001,3 +1001,32 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   .edge-evidence-item{padding:9px 6px}
   .edge-contribution-row{grid-template-columns:82px minmax(0,1fr) 32px}
 }
+.close-button{
+  position:relative !important;
+  padding:0 !important;
+  font-size:0 !important;
+  line-height:0 !important;
+}
+
+.close-button::before,
+.close-button::after{
+  content:"" !important;
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:20px !important;
+  height:2px !important;
+  margin:0 !important;
+  border-radius:999px !important;
+  background:currentColor !important;
+  pointer-events:none !important;
+  transform-origin:center !important;
+}
+
+.close-button::before{
+  transform:translate(-50%, calc(-50% - 2px)) rotate(45deg) !important;
+}
+
+.close-button::after{
+  transform:translate(-50%, calc(-50% - 2px)) rotate(-45deg) !important;
+}
