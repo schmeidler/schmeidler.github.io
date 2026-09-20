@@ -595,16 +595,6 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   font-weight:400!important;
   letter-spacing:normal!important;
 }
-@media(min-width:951px){
-  .site-header .nav{
-    gap:7px!important;
-  }
-  .site-header .nav a,
-  .site-header .nav .nav-control{
-    padding:8px 12px!important;
-    font-size:.86rem!important;
-  }
-}
 
 .hero{
   gap:0;
@@ -657,4 +647,53 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
   stroke-width:1.4;
   stroke-linecap:round;
   stroke-linejoin:round;
+}
+
+/* FINAL: toolbar typography matched to the main site */
+@media (min-width: 951px) {
+  .site-header .nav,
+  .site-header .nav a,
+  .site-header .nav .nav-control {
+    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+    font-size: .86rem !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    letter-spacing: normal !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-stretch: normal !important;
+    text-transform: none !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .site-header .nav .nav-control {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@media (max-width: 950px) {
+  .site-header .nav,
+  .site-header .nav a,
+  .site-header .nav .nav-control {
+    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+    font-size: .92rem !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    letter-spacing: normal !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-stretch: normal !important;
+    text-transform: none !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .site-header .nav .nav-control {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
