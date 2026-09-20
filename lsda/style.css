@@ -692,3 +692,48 @@ html[data-theme="dark"] .theme-track .theme-moon{color:var(--toolbar-bg)}
     font-size:.92rem!important;
   }
 }
+
+/* Match the main-site toolbar text rendering exactly. */
+.site-header,
+.site-header a,
+.site-header button,
+.site-header .nav,
+.site-header .nav a,
+.site-header .nav .nav-control {
+  -webkit-font-smoothing: auto !important;
+  -moz-osx-font-smoothing: auto !important;
+}
+
+.site-header {
+  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+  font-size: 18px !important;
+  line-height: 1.5 !important;
+  font-weight: 300 !important;
+}
+
+.site-header .nav {
+  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+  font-size: .92rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+}
+
+.site-header .nav a,
+.site-header .nav .nav-control {
+  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: normal !important;
+}
+
+@media (min-width: 951px) {
+  .site-header .nav {
+    gap: 7px !important;
+  }
+
+  .site-header .nav a,
+  .site-header .nav .nav-control {
+    padding: 8px 12px !important;
+    font-size: .86rem !important;
+  }
+}
