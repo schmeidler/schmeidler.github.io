@@ -4533,3 +4533,7 @@ html[data-theme="dark"] .theme-track .theme-moon {
   border-bottom:1px solid var(--page-line);
   padding-bottom:2px;
 }
+
+.hobby-intro{
+  margin-bottom:6px;
+}
