@@ -22,25 +22,91 @@
   <link rel="stylesheet" href="style.css?v=44" />
 
   <style>
-    .hobbies-back a {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      font-family: var(--font-sans);
-      font-size: .9rem;
-      line-height: 1.25;
-      font-weight: 500;
-      text-decoration: none;
+    .hobbies-hero{
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:0;
+      padding:36px 0 30px;
     }
 
-    .hobbies-back a:hover {
-      text-decoration: underline;
-      text-underline-offset: 4px;
+    .hobbies-hero-main,
+    .hobbies-hero-copy{
+      border:1px solid var(--page-line);
+      background:transparent;
+      color:var(--page-fg);
     }
 
-    .hobbies-back svg {
-      display: block;
-      flex: 0 0 auto;
+    .hobbies-hero-main{
+      position:relative;
+      z-index:2;
+      min-height:320px;
+      display:flex;
+      align-items:flex-end;
+      padding:34px;
+      border-radius:var(--radius);
+    }
+
+    .hobbies-hero-copy{
+      position:relative;
+      z-index:1;
+      min-height:320px;
+      display:flex;
+      align-items:flex-end;
+      padding:34px;
+      margin-left:-1px;
+      border-radius:0;
+    }
+
+    .hobbies-hero-main h1{
+      margin:0;
+      font-family:var(--font-serif);
+      font-size:clamp(4rem,9vw,9rem);
+      line-height:.85;
+      font-weight:400;
+      letter-spacing:-.07em;
+    }
+
+    .hobbies-hero-copy p{
+      margin:0;
+      max-width:560px;
+      font-family:var(--font-sans);
+      font-size:1.05rem;
+      line-height:1.5;
+      font-weight:300;
+    }
+
+    .hobbies-back a{
+      gap:7px;
+    }
+
+    .hobbies-back svg{
+      display:block;
+      flex:0 0 auto;
+    }
+
+    @media(max-width:760px){
+      .hobbies-hero{
+        grid-template-columns:1fr;
+      }
+
+      .hobbies-hero-main,
+      .hobbies-hero-copy{
+        min-height:0;
+        padding:28px 24px;
+      }
+
+      .hobbies-hero-main{
+        min-height:250px;
+      }
+
+      .hobbies-hero-copy{
+        margin-left:0;
+        margin-top:-1px;
+      }
+
+      .hobbies-hero-main h1{
+        font-size:clamp(3.7rem,18vw,5.6rem);
+      }
     }
   </style>
 </head>
@@ -71,28 +137,24 @@
             >
               <g>
                 <rect width="30" height="18" fill="#21468B" />
-
                 <path
                   d="M-1 -1L31 19M31 -1L-1 19"
                   stroke="#fff"
                   stroke-width="4"
                   stroke-linecap="butt"
                 />
-
                 <path
                   d="M-1 -1L31 19M31 -1L-1 19"
                   stroke="#C8102E"
                   stroke-width="1.5"
                   stroke-linecap="butt"
                 />
-
                 <path
                   d="M15 0v18M0 9h30"
                   stroke="#fff"
                   stroke-width="6"
                   stroke-linecap="butt"
                 />
-
                 <path
                   d="M15 0v18M0 9h30"
                   stroke="#C8102E"
@@ -156,7 +218,6 @@
 
     </div>
 
-
     <button
       class="menu-toggle"
       aria-expanded="false"
@@ -166,7 +227,6 @@
       <span></span>
       <b class="sr-only">Open menu</b>
     </button>
-
 
     <nav id="main-nav" class="nav">
       <a href="index.html#profile">Profile</a>
@@ -183,37 +243,18 @@
 
   <main class="research-page page-shell">
 
-    <section class="subhero compact-subhero">
-      <p class="kicker">Outside work</p>
+    <section class="hobbies-hero">
 
-      <h1>Hobbies</h1>
+      <div class="hobbies-hero-main">
+        <h1>Hobbies</h1>
+      </div>
 
-      <p>
-        A small corner for the things I enjoy outside of work.
-      </p>
-    </section>
-
-
-    <section class="project-detail hobby-detail">
-
-      <div class="project-detail-grid">
-
-        <div>
-          <p class="meta">Personal</p>
-
-          <h2>
-            See what I do in my free time.
-          </h2>
-        </div>
-
-
-        <div class="detail-copy">
-          <p>
-            This page is for hobbies, personal projects and interests.
-            I’ll add selected things here over time.
-          </p>
-        </div>
-
+      <div class="hobbies-hero-copy">
+        <p>
+          A small corner for the things I enjoy outside of work.
+          This page is for hobbies, personal projects and interests.
+          I’ll add selected things here over time.
+        </p>
       </div>
 
     </section>
@@ -221,7 +262,7 @@
 
     <div class="back-row hobbies-back">
 
-      <a href="index.html#hobbies" aria-label="Back to hobbies on CV">
+      <a href="index.html#hobbies" aria-label="Back to CV">
 
         <svg
           aria-hidden="true"
