@@ -1099,3 +1099,15 @@ dialog:focus-visible{
   text-decoration:underline;
   text-underline-offset:4px;
 }
+
+.dialog-back{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+
+.dialog-back .arrow-up-right{
+  width:16px;
+  height:16px;
+  margin:0 !important;
+}
