@@ -4523,3 +4523,13 @@ html[data-theme="dark"] .theme-track .theme-moon {
     letter-spacing: normal !important;
   }
 }
+
+.hobby-open{
+  font-family:var(--font-sans) !important;
+  font-size:.9rem !important;
+  line-height:1.25 !important;
+  font-weight:500 !important;
+  width:max-content;
+  border-bottom:1px solid var(--page-line);
+  padding-bottom:2px;
+}
