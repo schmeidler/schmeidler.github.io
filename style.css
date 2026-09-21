@@ -4537,3 +4537,7 @@ html[data-theme="dark"] .theme-track .theme-moon {
 .hobby-intro{
   margin-bottom:8px;
 }
+
+.back-row a{
+  font-weight:300 !important;
+}
