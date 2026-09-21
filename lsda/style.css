@@ -1068,3 +1068,34 @@ dialog:focus-visible{
 #methodContent .method-section:first-child{
   padding-top:32px !important;
 }
+
+.dialog-back{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  flex:0 0 auto;
+  color:inherit;
+  font-size:14px;
+  font-weight:400;
+  line-height:1;
+  text-decoration:none;
+  white-space:nowrap;
+}
+
+.dialog-back .arrow-icon{
+  display:block;
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  margin:0 !important;
+}
+
+.dialog-back:hover{
+  text-decoration:underline;
+  text-underline-offset:4px;
+}
